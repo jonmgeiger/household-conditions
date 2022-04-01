@@ -1,0 +1,85 @@
+---
+title: "Preliminary Analysis"
+author: "Jon Geiger, Noel Goodwin, Abigail Joppa"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Importing Packages
+
+```{r, output=F}
+library(tidyverse)
+library(readxl)
+```
+
+# Importing and Cleaning Data
+
+```{r}
+district_data <- read_excel("NHGIS_District_data.xlsx")
+```
+
+Fortunately, there isn't much initial restructuring required of this data. 
+
+```{r}
+names(district_data)
+```
+
+Let's work on renaming our variables to more `R`-friendly names. 
+
+```{r}
+names_list <- c(
+    "school_ID", 
+    "state", 
+    "dist",  # Geographic School District 
+    "ch_5_to_17", # Children 5-17 (SAIPE Estimate)
+    "pct_pov", # % Poverty (SAIPE Estimate)
+    "pct_SP", # % Single Parent Estimate
+    "SP_MOE", # Single Parent Margin of Error
+    "pct_HHVJ", # % HHs With Vulnerable Job Estimate
+    "HHVJ_MOE", # Vulnerable Job Margin of Error
+    "pct_CC", # % Crowded Conditions Estimate
+    "CC_MOE", # HH With Crowded Conditions Margin of Error
+    "pct_NCI", # % No Computer or Internet Estimate
+    "nci_MOE", # No Computer or Internet Margin of Error
+    "pct_CD", # % Children with Disability
+    "CD_MOE", # Children with Disability Margin of Error
+    "pct_CLI", # % Linguistically Isolated Children
+    "CLI_MOE" # Linguistically Isolated Children Margin of Error
+)
+names(district_data) <- names_list
+district_pcts <- district_data %>%
+    select(-ends_with("MOE")) 
+```
+
+We make a new dataset, `district_pcts`, which contains all the values without any of the margins of error. 
+
+We can now do some preliminary analysis on this data. Let's first see if there's any NA/missing data:
+
+```{r}
+district_data %>% 
+    is.na() %>% 
+    colSums()
+```
+
+Fortunately, there don't appear to be any NA values in any of the percentage columns. 
+
+Let's check out some variable correlations: 
+
+```{r}
+cor(district_pcts[,4:ncol(district_pcts)]) %>% round(2)
+```
+
+
+```{r}
+#' 
+#' TODO: Start to visualize margins of error for different measures
+#' TODO: Plot variables against each other with non-negligible correlations
+#' TODO: Decide on an analysis/visualization color scheme/theme (separate file)
+#' 
+#' 
+```
