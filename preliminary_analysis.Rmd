@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, output=F}
 library(tidyverse)
 library(readxl)
+library(corrplot)
 ```
 
 # Importing and Cleaning Data
@@ -36,7 +37,7 @@ names_list <- c(
     "school_ID", 
     "state", 
     "dist",  # Geographic School District 
-    "ch_5_to_17", # Children 5-17 (SAIPE Estimate)
+    "children", # Children 5-17 (SAIPE Estimate)
     "pct_pov", # % Poverty (SAIPE Estimate)
     "pct_SP", # % Single Parent Estimate
     "SP_MOE", # Single Parent Margin of Error
@@ -71,8 +72,98 @@ Fortunately, there don't appear to be any NA values in any of the percentage col
 Let's check out some variable correlations: 
 
 ```{r}
-cor(district_pcts[,4:ncol(district_pcts)]) %>% round(2)
+district_pcts[,4:ncol(district_pcts)] %>% 
+    cor() %>%
+    corrplot(method = "number")
 ```
+Based on the correlations, it might make sense to plot some variables against each other to see some initial trends. We will choose a cutoff correlation value of 0.3 to distinguish variables which may be of interest. This is completely arbitrary, but limits the amount of plots we need to make such that the analysis is not entirely cumbersome. 
+
+```{r}
+ggplot(district_pcts,
+       aes(x = pct_pov, 
+           y = pct_SP
+       )) + 
+    geom_point(alpha = 0.1) + 
+    geom_smooth()
+
+ggplot(district_pcts,
+       aes(x = pct_pov, 
+           y = pct_CC
+       )) + 
+    geom_point(alpha = 0.1) + 
+    geom_smooth()
+
+ggplot(district_pcts,
+       aes(x = pct_pov, 
+           y = pct_NCI
+       )) + 
+    geom_point(alpha = 0.1) + 
+    geom_smooth()
+
+ggplot(district_pcts,
+       aes(x = pct_SP, 
+           y = pct_NCI
+       )) + 
+    geom_point(alpha = 0.1) + 
+    geom_smooth()
+
+ggplot(district_pcts,
+       aes(x = pct_CC, 
+           y = pct_NCI
+       )) + 
+    geom_point(alpha = 0.1) + 
+    geom_smooth()
+
+ggplot(district_pcts,
+       aes(x = pct_CC, 
+           y = pct_CLI
+       )) + 
+    geom_point(alpha = 0.1) + 
+    geom_smooth()
+```
+
+Immediately from all of these plots, we can notice that the vast majority of values for any given predictor are below 50%. Some trends emerge from the smoother, but for the purposes of trends or reasonable analysis, it may be useful to eliminate some influential points, which occur at the 100% marks. 
+
+As an example, we can look at the variable `pct_pov`, which is used in the second plot created. There are two data points at the 100% mark, so let's look at these values: 
+```{r}
+district_data %>% 
+    filter(pct_pov == 1) %>% 
+    arrange(pct_pov) %>%
+    select(state, dist, children, pct_pov)
+```
+We can immediately notice that these school districts have very few children from the ages of 5 to 17 in them. Let's look at a summary of the distribution of children across school districts: 
+```{r}
+summary(district_data$children)
+```
+The mean of this distribution is well above the third quartile, implying that this data is heavily right-skewed. This makes sense, given the fact that there are so many small school districts and likely a few very large ones. 
+
+Because of the right-skewed nature of this data, let's look at a log-transformed boxplot
+
+```{r}
+ggplot(district_data, aes(x = children)) + 
+    geom_boxplot() + 
+    geom_jitter(aes(y = 0), alpha = 0.01, height = 0.05) + 
+    scale_x_log10() + 
+    geom_density()
+```
+
+Additionally, let's see which school district has over a million estimated children aged 5 to 17. 
+```{r}
+district_data %>% 
+    select(state, dist, children) %>%
+    arrange(desc(children)) %>%
+    head(5)
+```
+Makes sense. Is this actually a school district, or is it a conglomerate of school districts? We'll assume that the data is good, and that the New York City Department of Education is, in fact, classified as a school district. 
+
+Generally, it appears that there are many school districts with zero students, which introduces issues when estimating percentages for different statistics. We will remove these school districts, as they offer no important information. 
+```{r}
+district_filtered <- district_data %>%
+    filter(children > 0)
+nrow(district_data) - nrow(district_filtered)
+```
+We can see that we removed 46 observations, or that there were 46 schools which reported no children in that school district. 
+
 
 
 ```{r}
