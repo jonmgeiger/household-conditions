@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, output=F}
 library(tidyverse)
+library(knitr)
 library(readxl)
 library(corrplot)
 ```
