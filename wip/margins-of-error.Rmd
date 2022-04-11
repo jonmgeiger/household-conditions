@@ -22,7 +22,6 @@ names(district_data) <- names_list
 - [x] Calculate standard error based on SE equation for proportions
 - [x] Figure out the z\* value used for the margins of error
 - [x] Explore the relationship between number of children and margin of error
-- [ ] Start figuring out weighted regression based on standard error
 
 # Motivation and Explanation
 
@@ -135,7 +134,9 @@ $$
 
 Because this technique uses information which is not available to the public, let's see how good of an estimate the more typical form of standard error holds up in this scenario.
 
-With the knowledge that standard error for proportions assumes the form: ${\rm SE} = \sqrt{\hat p(1-\hat p)/n}$, we can calculate this form of standard error for an example column, and figure out which value of $z^*$ corresponds to the data. Because this form of standard error doesn't take special consideration for 0\% and 100\% cases, our value of $z^*$ is likely to be very different from that which is explained in the methodology section. We'll use the number of children in the school district as our $n$, which will very likely yield very small values for the standard error. 
+With the knowledge that standard error for proportions assumes the form: ${\rm SE} = \sqrt{\hat p(1-\hat p)/n}$, we can calculate this form of standard error for an example column, and figure out which value of $z^*$ corresponds to the data. Because this form of standard error doesn't take special consideration for 0\% and 100\% cases, our value of $z^*$ is likely to be very different from that which is explained in the methodology section. 
+
+While it is certainly not a good estimate of the sample size, we can use the number of children in the school district as our $n$, which will very likely yield very small values for the standard error. An alternative is that, since we know the value of $z^*$ that the ACS uses for calculating margins of error, we could attempt to make some estimate of the sample size used in the community surveys. Because this is not useful, however, it is beyond the scope of this analysis and we will trudge onwards.
 
 We'll use the same `moe_example` dataframe we created earlier, looking at just the percentage of households with single parents. If we divide the margin of error we get from the data by the standard error we get from the equation, we'll get an estimate of the individual $z^*_i$ values for each data point. Mathematically, if we assume that the margin of error estimates from ACS assume the same form that is typically seen for proportions, then for a single row $i$, we should have: 
 
@@ -143,7 +144,7 @@ $$
 \frac{\rm MoE_i}{\rm SE_i} = \frac{z^*_i \sqrt{\frac{\hat p_i (1-\hat p_i)}{n_i}}}{\sqrt{\frac{\hat p_i (1-\hat p_i)}{n_i}}} = z^*_i = 1.645.
 $$
 
-If the divided distribution happens to be centered on 1.645, then our estimate is pretty good. If not, then we'll rely on the margin of error calculated by the government for our calculations. 
+If the divided distribution happens to be centered on 1.645, then our estimate is pretty good. If not, we can explore the distribution of the margins of error and decide what to do from there.
 
 ```{r}
 moe_example %>%
@@ -203,4 +204,4 @@ district_fixed_moe %>%
     as.list()
 ```
 
-Interestingly, it appears that there is one school in New Mexico for which the point estimates of single parent households *and* of households with vulnerable jobs are both zero. This seems like faulty data given the poverty rate and the visible outlying nature of the data point, but we will continue forth cautiously. 
+Interestingly, it appears that there is one school in New Mexico for which the point estimates of single parent households *and* of households with vulnerable jobs are both zero. This seems like faulty data given the poverty rate and the visible outlying nature of the data point, but we will continue forth cautiously. This analysis will inform how we choose a cutoff value for future regression analyses. 
