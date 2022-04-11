@@ -21,7 +21,7 @@ names(district_data) <- names_list
 - [x] Convert from Margin of Error columns to a margin of error (34% - 43%  --> 9%)
 - [x] Calculate standard error based on SE equation for proportions
 - [x] Figure out the z\* value used for the margins of error
-- [ ] Explore the relationship between number of children and margin of error
+- [x] Explore the relationship between number of children and margin of error
 - [ ] Start figuring out weighted regression based on standard error
 
 # Motivation and Explanation
