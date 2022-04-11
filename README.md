@@ -35,8 +35,8 @@ Students who have cognitive, ambulatory, independent living, selfcare, vision, o
 Students have single parents if they are living in a household with only one father or one mother.
 
 ### Parents in vulnerable economic sectors: 
-Parents are considered to be in vulnerable economic sectors if they earn less than 800 dollars a week and works in industries that are most likely to be laid off. This includes those working in: 
-•	Parents of a household are defined as the householder and his or her spouse or partner. 
+Parents are considered to be in vulnerable economic sectors if they earn less than 800 dollars a week and works in industries that are most likely to be laid off. This includes those working in the entertainment, service, and retail industries.    
+- Parents of a household are defined as the householder and his or her spouse or partner. 
 
 ### Crowded Conditions: 
 Students are considered to be living crowded conditions if there is less than one room per household member. A room is a space enclosed by walls, a floor and a ceiling. This excludes bathrooms, porches, balconies, foyers, halls, and unfinished basements. This estimate is calculated for all occupied households, including households without students. 
