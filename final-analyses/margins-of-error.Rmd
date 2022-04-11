@@ -1,0 +1,207 @@
+---
+title: "Dealing with Margins of Error"
+author: "Jon Geiger"
+date: "April 10, 2022"
+output: openintro::lab_report
+---
+
+```{r load-packages, message=FALSE}
+library(tidyverse)
+library(readxl)
+
+# Import data and clean names
+
+district_data <- read_excel("../data/NHGIS_District_data.xlsx")
+source("../scripts/names_list.R")
+names(district_data) <- names_list
+```
+
+# Goals
+
+- [x] Convert from Margin of Error columns to a margin of error (34% - 43%  --> 9%)
+- [x] Calculate standard error based on SE equation for proportions
+- [x] Figure out the z\* value used for the margins of error
+- [x] Explore the relationship between number of children and margin of error
+
+# Motivation and Explanation
+
+The data in the Excel file gives percentages of different households in school districts which fall under certain categories. Associated with these percentages, there is a margin of error. As an example, this is what some of the columns in our dataset look like:
+
+```{r}
+district_data %>%
+    head(2) %>%
+    select(2:4, 6, 7)
+```
+
+Our goal is to replace these margin of error columns with something which will be more useful, such as the one-sided range of the margin of error. We will first try this out with one column, then apply the analysis to every margin of error column. As an example, we can see that the Maxwell AFB School District has a margin of error going from $3\%$ to $17\%$. The range of this would be $17%-3%=14%$, half of which would be $7\%$. This gives us a tool to discover how they may have calculated the margin of error.
+
+Mathematically, we know that a margin of error for a sample proportion is given by:
+
+$$
+\hat p \pm z^* \sqrt{\frac{\hat p (1-\hat p)}{n}}
+$$
+
+This term which is added onto the estimated proportion provides the margin of error, meaning that what they have labeled as a "Margin of Error" is actually closer in meaning to a confidence interval with $z^*$ standard errors away from the estimated proportion. For the sake of terminology, we will define Margin of Error as the one-sided version of the confidence interval, such that 
+$$
+{\rm ME} = z^* \sqrt{\frac{\hat p (1-\hat p)}{n}}.
+$$
+
+# Analysis
+
+We will go in order of the goals, starting with converting the columns to a more usable format. 
+
+## Margin of Error Extraction
+
+We'll start with a single column, then apply that technique to every margin of error column in the original data frame. We'll use the Single Parent margin of error as the example.
+
+```{r}
+moe_example <- district_data %>% 
+    select(1, 4, 6, 7)
+moe_example %>% head(5)
+```
+
+One approach to this problem is to remove the percentage signs, split the column at the hyphen, then use the resulting two columns to calculate a difference and divide it by two. Another approach is to use regular expressions to capture the numbers, and subtract and divide them directly. We'll utilize this second method using `str_extract_all` from the `stringr` package. 
+
+```{r}
+str_example <- "0%-10%"
+str_extract_all(str_example, "\\d+") %>% 
+    unlist() %>%
+    as.numeric()
+```
+
+We can see that for this example string, we can extract the numbers, `unlist`, and convert to numeric in order to get a vector of two numbers. We can pair these in combination with the difference function and division in order to get the margin of error. We will create a function which maps this function to a list of margins of error, and apply it to one column of the data. 
+
+```{r}
+to_moe <- function(moe) {
+    moe_single <- function(x) {
+        str_extract_all(x, "\\d+") %>%
+            unlist() %>%        # List to Vector
+            as.numeric() %>%    # Convert to numbers
+            diff() %>%          # Take the difference
+            `/`(2) %>%          # Single-sided MoE
+            `/`(100) %>%        # Convert to proportion
+            return()            # Return Margin of Error
+    }
+    lapply(moe, FUN = moe_single) %>%
+        unlist() %>%
+        return()
+}
+```
+
+Now that we've created our function, let's try it out on a list of just two strings to make sure that it works properly. 
+
+```{r}
+to_moe(c("25%-50%", "1%-2%"))
+```
+
+Because it seems to work as intended, let's see what it looks like if we mutate a whole column of the data: 
+
+```{r}
+moe_example %>% 
+    mutate("moe_new" = to_moe(SP_MOE))
+```
+
+Now that we have a function that works, let's work on applying it to all of the Margin of Error columns.
+
+```{r}
+district_data %>%
+    head(5) %>%
+    mutate(
+        across(
+            ends_with("MOE"), 
+            to_moe
+        )
+    ) %>%
+    select(ends_with("MOE"))
+```
+
+We can see that all of the Margin of Error columns have been converted into the more useful margin of error format. 
+
+## Comparing to Standard Error values
+
+In reality, ACS *does not* use the aforementioned form of standard error for the reason that there are so many districts for which the estimated proportions are 0\% or 100\%, which would yield a margin of error equal to zero. Their technique is more complicated, and takes into account special cases for when there are counts or percents of zero or 100. They utilize Variance Replicate Estimates, which are used almost exclusively for Census data. According to census.gov in their methodology, they have: 
+
+$$
+{\rm Variance} = \frac{4}{80}\sum_{i=1}^{80}({\rm VarRep}_i - {\rm Estimate})^2
+$$
+and
+$$
+\begin{aligned}
+    \text{Margin of Error (90% Confidence)} &= 1.645 \times \text{Standard Error} \\
+    &= 1.645 \times \sqrt{\rm Variance}
+\end{aligned}
+$$
+
+Because this technique uses information which is not available to the public, let's see how good of an estimate the more typical form of standard error holds up in this scenario.
+
+With the knowledge that standard error for proportions assumes the form: ${\rm SE} = \sqrt{\hat p(1-\hat p)/n}$, we can calculate this form of standard error for an example column, and figure out which value of $z^*$ corresponds to the data. Because this form of standard error doesn't take special consideration for 0\% and 100\% cases, our value of $z^*$ is likely to be very different from that which is explained in the methodology section. 
+
+While it is certainly not a good estimate of the sample size, we can use the number of children in the school district as our $n$, which will very likely yield very small values for the standard error. An alternative is that, since we know the value of $z^*$ that the ACS uses for calculating margins of error, we could attempt to make some estimate of the sample size used in the community surveys. Because this is not useful, however, it is beyond the scope of this analysis and we will trudge onwards.
+
+We'll use the same `moe_example` dataframe we created earlier, looking at just the percentage of households with single parents. If we divide the margin of error we get from the data by the standard error we get from the equation, we'll get an estimate of the individual $z^*_i$ values for each data point. Mathematically, if we assume that the margin of error estimates from ACS assume the same form that is typically seen for proportions, then for a single row $i$, we should have: 
+
+$$
+\frac{\rm MoE_i}{\rm SE_i} = \frac{z^*_i \sqrt{\frac{\hat p_i (1-\hat p_i)}{n_i}}}{\sqrt{\frac{\hat p_i (1-\hat p_i)}{n_i}}} = z^*_i = 1.645.
+$$
+
+If the divided distribution happens to be centered on 1.645, then our estimate is pretty good. If not, we can explore the distribution of the margins of error and decide what to do from there.
+
+```{r}
+moe_example %>%
+    filter(children > 0) %>%
+    mutate(SP_MOE = to_moe(SP_MOE), 
+           SP_SE = sqrt(pct_SP*(1-pct_SP)/children), 
+           z_star_i = SP_MOE/SP_SE) %>%
+    filter(SP_SE > 0) %>%
+    pull(z_star_i) %>%
+    hist(main = "z-star Distribution", 
+         xlab = "z-star_i")
+```
+
+We can see that this data is very clearly **not** centered on 1.645, and as such we will rely on the margins of error calculated by ACS, as their techniques are more refined and specific to census data than the typical margin of error formulation seen for proportions. 
+
+## Replacing Margin of Error Columns
+
+We've decided that it's best to use the estimates of the margin of error calculated by the ACS. Because of this, in order to get the data with margins of error into a more usable format, we'll just convert the margin of error columns into proper margins of error, one-sided, which describe a 90\% confidence band. We'll also convert these values to proportions rather than percents, since currently the estimate columns are in different units than the margin of error columns. 
+
+```{r}
+district_fixed_moe <- district_data %>%
+    mutate(
+        across(
+            ends_with("MOE"), 
+            to_moe
+        ) 
+    )
+```
+
+This replaces the margin of error columns with the proper one-sided margins of error. We assume, in this case, that the margins of error are symmetric on both sides of the point estimate proportion. 
+
+## Margin of Error and Number of Children
+
+We would expect, based on the typical definition of margin of error for proportions, that in general, as the number of children increases, the margin of error should decrease. This will also fluctuate with the value of the proportion itself, but let's see if this trend is, in general, true. 
+```{r, warning=F}
+district_fixed_moe %>%
+    select(children, ends_with("MOE")) %>%
+    pivot_longer(cols = c("SP_MOE":"CLI_MOE"), 
+                 names_to = "measure", 
+                 values_to = "MOE") %>%
+    ggplot(mapping = aes(x = children, 
+                         y = MOE,
+                         color = measure)) + 
+    geom_point(alpha = 0.1) + 
+    geom_smooth(se = F) + 
+    scale_x_log10()
+    
+```
+
+The plot would appear to reveal that as the number of children increases, yes, the margin of error does tend to decrease. The exceptions seem to be those school districts for which there is a margin of error equal to 0.5, which means that the margin of error in the original dataset must have ranged from 0\%-100\%. This is typically seen for school districts which have very few students (< 1000), though there does seem to be one school in one year with between one and ten thousand students for which the margin of error is equal to 50\%. Let's see which school this is: 
+```{r}
+district_fixed_moe %>%
+    filter(children > 1000) %>%
+    filter(
+        if_any(ends_with("MOE"), ~ .x > 0.4)
+    ) %>%
+    as.list()
+```
+
+Interestingly, it appears that there is one school in New Mexico for which the point estimates of single parent households *and* of households with vulnerable jobs are both zero. This seems like faulty data given the poverty rate and the visible outlying nature of the data point, but we will continue forth cautiously. This analysis will inform how we choose a cutoff value for future regression analyses. 
