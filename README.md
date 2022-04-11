@@ -18,6 +18,7 @@ An estimate of children between the ages 5-17 who are enrolled in school within 
 \* _yearly estimate made by US Census Bureau’s Small Area Income and Poverty Estimates (**SAIPE**) Program based on Census responses._
 
 ## Condition Estimates: 
+These five-year estimates of household conditions within a school district are calculated based on aggregate Census survey data for households within each school district’s geographic location. Because of this, some estimates may include households without school-aged children (noted in descriptions) which is partly accounted for in each estimate’s corresponding margin of error. 
 
 ### Poverty (SAIPE estimate): 
 A student is considered to be in poverty if their family’s income is at or below 100 percent of the federal poverty level. The poverty level changes each year and is calculated based on how many people are living in a household. 
