@@ -1,17 +1,14 @@
+# Source: https://github.com/UrbanInstitute/education-data-package-r
+
+library(tidyverse)
+library(educationdata)
+
 df <- get_education_data(
     level = 'school-districts', 
     source = 'edfacts', 
-    topic = 'grad-rates'
+    topic = 'grad-rates', 
+    filters = list(year = 2014:2018)
 )
 
-library(tidyverse)
-
-glimpse(df)
-View(df)
-
-df_2014_2018 <- df %>%
-    filter(year %>% between(2014, 2018))
-
-df_2014_2018 %>% 
+df %>% 
     write_csv(file = "graduation_data.csv")
-
