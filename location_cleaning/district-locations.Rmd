@@ -1,0 +1,61 @@
+---
+title: "District-Locations"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+# Importing Packages
+
+```{r, message=F}
+library(tidyverse)
+library(readxl)
+library(corrplot)
+library(tigris)
+```
+
+# Importing and Cleaning Data
+
+```{r}
+district_data <- read_excel("C:/Users/User/Documents/GitHub/household-conditions/data/NHGIS_District_data.xslx")
+View(district_data)
+```
+names_list <- c(
+    "school_ID", 
+    "state", 
+    "dist",  # Geographic School District 
+    "children", # Children 5-17 (SAIPE Estimate)
+    "pct_pov", # % Poverty (SAIPE Estimate)
+    "pct_SP", # % Single Parent Estimate
+    "SP_MOE", # Single Parent Margin of Error
+    "pct_HHVJ", # % HHs With Vulnerable Job Estimate
+    "HHVJ_MOE", # Vulnerable Job Margin of Error
+    "pct_CC", # % Crowded Conditions Estimate
+    "CC_MOE", # HH With Crowded Conditions Margin of Error
+    "pct_NCI", # % No Computer or Internet Estimate
+    "nci_MOE", # No Computer or Internet Margin of Error
+    "pct_CD", # % Children with Disability
+    "CD_MOE", # Children with Disability Margin of Error
+    "pct_CLI", # % Linguistically Isolated Children
+    "CLI_MOE" # Linguistically Isolated Children Margin of Error
+)
+names(district_data) <- names_list
+district_pcts <- district_data %>%
+    select(-ends_with("MOE")) 
+View(district_data)
+
+```
+
+# Need to separate the original data by year's to be able to merge with district location data
+
+```{r}
+
+
+
+
+```
+
+
