@@ -11,4 +11,4 @@ df <- get_education_data(
 )
 
 df %>% 
-    write_csv(file = "graduation_data.csv")
+    write_csv(file = "../data/graduation_data.csv")
