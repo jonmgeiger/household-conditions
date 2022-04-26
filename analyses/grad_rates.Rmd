@@ -12,9 +12,9 @@ library(tidylog)
 ```
 
 ```{r import-data}
-grad_data <- read_csv("../data/graduation_data.csv", 
+grad_data <- read_csv("../data/grad.csv", 
                        show_col_types = FALSE)
-race_data  <- read_csv("../data/race_join.csv", 
+race_data  <- read_csv("../data/race_household.csv", 
                        show_col_types = FALSE)
 ```
 
@@ -37,13 +37,13 @@ grad_rates <- grad_data %>%
 If the variable `cohort_num` represents the number of students in that cohort (rather than the cohort index, *per se*), then we can add the total number of students in a school district in a year by doing the following: 
 
 ```{r}
-grad_rates %>% 
+grad_rates_summarized <- grad_rates %>% 
     filter(
         !is.na(cohort_num),
         grad_rate_midpt > 0 & grad_rate_low > 0 & grad_rate_high > 0
     )%>%
     group_by(
-        leaid, lea_name, year
+        leaid, year
     ) %>% 
     mutate(
         cohort_total = sum(cohort_num, na.rm = TRUE),
@@ -56,11 +56,51 @@ grad_rates %>%
         grad_rate_low = sum(cohort_weight * grad_rate_low), 
         grad_rate_high = sum(cohort_weight * grad_rate_high)
     ) %>% 
-    group_by(leaid, lea_name) %>%
+    group_by(leaid) %>%
     summarize(
         grad_rate_midpt = mean(grad_rate_midpt), 
         grad_rate_low = mean(grad_rate_low), 
         grad_rate_high = mean(grad_rate_high)
     )
+grad_rates_summarized
 ```
 
+```{r join-datasets}
+nrow(race_data)
+nrow(grad_rates_summarized)
+
+data_joined <- race_data %>% 
+    left_join(grad_rates_summarized, 
+              by = c("LEAID" = "leaid"))
+
+data_not_joined <- race_data %>% 
+    anti_join(grad_rates_summarized, 
+              by = c("LEAID" = "leaid"))
+
+data_not_joined %>% 
+    arrange(desc(children)) %>% 
+    head(10) %>% 
+    select(dist, children)
+    
+data_not_joined %>% 
+    filter(children < 1000000) %>%
+    ggplot(aes(x = children)) + 
+    scale_x_log10() + 
+    geom_boxplot() + 
+    geom_density()
+
+```
+
+About 50% of the school district for which there is no data on graduation rates (didn't join properly, revealed by `anti_join()`) have between 100 and 1000 students---in other words, these are very small school districts. 
+
+It turns out that there was also no graduation rate data for the New York City Department of Education, which is a conglomeration of 32 individual school districts. While we could replace this department of education with its constituent school districts, the data we were given initially in our data set included this row, which is not, in fact, a school district. Now, similar to the New York Times at some of the newer COVID outbreaks, we will ignore New York City in our analysis. Let's reorder some of these columns and output this data to a CSV file. 
+
+```{r}
+names(data_joined)
+data_joined %>%
+    relocate(
+        starts_with("grad_rate"), 
+        .after = children
+    ) %>% 
+    write_csv("../data/grad_race_household.csv")
+```
