@@ -1,0 +1,49 @@
+---
+title: "Joining Graduation Data by LEAID"
+author: "Jon Geiger, Noel Goodwin, Abigail Joppa"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r import-data}
+grad_rates <- read_csv("../data/graduation_data.csv", 
+                       show_col_types = FALSE)
+race_data  <- read_csv("../data/race_join.csv", 
+                       show_col_types = FALSE)
+```
+
+Let's take a look at the variables in each of these data sets: 
+```{r}
+grad_rates %>% glimpse()
+race_data  %>% glimpse()
+```
+
+Graduation Data noticings: 
+
+- Missing data for graduation rates (low, midpoint, high) are encoded as either `NA` or as a negative value
+- One row is one cohort from one school district in one year. We need to filter out the missing data (negatives and NAs), then group by school distric
+
+```{r}
+grad_rates %>% 
+    filter(year == 2014 && leaid_num == 100005) %>% 
+    count(cohort_num) %>% 
+    ggplot() + 
+    geom_boxplot(mapping = aes(x = n))
+
+grad_rates %>% 
+    filter(year == 2014 && leaid_num == 100005) %>% 
+    filter(cohort_num < 1000) %>%
+    pull(cohort_num) %>% 
+    hist()
+
+grad_rates %>% 
+    filter(year == 2014 & leaid_num == 100005) %>% 
+    arrange(desc(cohort_num)) %>% 
+    count(cohort_num)
+               
+```
