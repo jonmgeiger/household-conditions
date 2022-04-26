@@ -1,8 +1,8 @@
 ---
-title: "Joining Graduation Data by LEAID"
+title: "Joining Graduation Data"
 author: "Jon Geiger, Noel Goodwin, Abigail Joppa"
 date: "`r Sys.Date()`"
-output: html_document
+output: openintro::lab_report
 ---
 
 ```{r setup, include=FALSE}
@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(tidylog)
 ```
+
+# Data Import and Glimpsing
 
 ```{r import-data}
 grad_data <- read_csv("../data/grad.csv", 
@@ -29,18 +31,25 @@ Graduation Data noticings:
 - Missing data for graduation rates (low, midpoint, high) are encoded as either `NA` or as a negative value
 - One row is one cohort from one school district in one year. We need to filter out the missing data (negatives and NAs), then group by school district
 
+From EDFacts documentation: 
+
+> "The definition of adjusted four-year cohort graduation rate data provided to the SEAs in the 2008 non-regulatory guidance and for the purposes of submitting data files to EDFacts is 'the number of students who graduate in four years with a regular high school diploma divided by the number of students who form the adjusted cohort for the graduating class.' From the beginning of 9th grade (or the earliest high school grade), students who are entering that grade for the first time form a cohort that is “adjusted” by adding any students who subsequently transfer into the cohort and subtracting any students who subsequently transfer out, emigrate to another country, or die."
+
+# Data Cleaning
+
+Since we're only after the graduation rates, we can ignore all of the columns giving other extraneous information.
+
 ```{r}
 grad_rates <- grad_data %>% 
-    select(leaid, lea_name, year, cohort_num, grad_rate_midpt, grad_rate_low, grad_rate_high) 
+    select(leaid, lea_name, year, cohort_num, grad_rate_midpt) 
 ```
 
-If the variable `cohort_num` represents the number of students in that cohort (rather than the cohort index, *per se*), then we can add the total number of students in a school district in a year by doing the following: 
+If the variable `cohort_num` represents the number of students in that cohort (rather than the cohort index, *per se*), then we can add the total number of students in a school district in a year, then take the weighted average of the graduation rates. We can then summarize across cohort, and across year, in order to get the five-year average for the school districts. When summarizing across the years, we also cannot assume that the total number of students across all cohorts is the same, so we also need to take a weighted average across all of the years. This is not too difficult, as we simply need to take column sums in the grouped data frames, create weighting proportions, and sum the product of the weighs with the graduation rates. This is done below, and the final product is a data frame for which one row is one high school district, with graduation rate data properly averaged for the five-year measurement. 
 
 ```{r}
 grad_rates_summarized <- grad_rates %>% 
     filter(
-        !is.na(cohort_num),
-        grad_rate_midpt > 0 & grad_rate_low > 0 & grad_rate_high > 0
+        !is.na(cohort_num), grad_rate_midpt > 0
     )%>%
     group_by(
         leaid, year
@@ -50,20 +59,27 @@ grad_rates_summarized <- grad_rates %>%
         cohort_weight = cohort_num/cohort_total,
         .after = cohort_num
     ) %>% 
-    summarize(
+    summarize( # Weighted Averages within year based on cohort size
         cohort_total = max(cohort_total), 
-        grad_rate_midpt = sum(cohort_weight * grad_rate_midpt), 
-        grad_rate_low = sum(cohort_weight * grad_rate_low), 
-        grad_rate_high = sum(cohort_weight * grad_rate_high)
+        grad_rate_midpt = sum(cohort_weight * grad_rate_midpt)
     ) %>% 
     group_by(leaid) %>%
-    summarize(
-        grad_rate_midpt = mean(grad_rate_midpt), 
-        grad_rate_low = mean(grad_rate_low), 
-        grad_rate_high = mean(grad_rate_high)
+    mutate(
+        student_total = sum(cohort_total, na.rm = TRUE),
+        student_weight = cohort_total/student_total,
+        .after = cohort_total
+    ) %>%
+    summarize( # Weighted Averages within district based on total size
+        student_total = max(student_total), 
+        grad_rate_midpt = sum(student_weight * grad_rate_midpt)
     )
 grad_rates_summarized
 ```
+
+# Joining the Data
+
+Let's join the graduation data with the race data, and take a look at the school districts that didn't properly join with the graduation data. We'll left join the race data with the graduation data. 
+
 
 ```{r join-datasets}
 nrow(race_data)
@@ -76,35 +92,54 @@ data_joined <- race_data %>%
 data_not_joined <- race_data %>% 
     anti_join(grad_rates_summarized, 
               by = c("LEAID" = "leaid"))
+```
+
+# Explaining Un-joined Data
+
+Now that we've joined our data, let's take a look at some of the data that wasn't properly joined. First, let's look at some of the larger ones.
+
+```{r}
+data_not_joined %>% 
+    is.na() %>% 
+    colSums() %>% 
+    head(7)
 
 data_not_joined %>% 
     arrange(desc(children)) %>% 
     head(10) %>% 
     select(dist, children)
-    
+```
+
+Many of these school districts didn't join properly because they lack LEA IDs. 
+
+We can notice that the very largest "school district," the New York City Department of Education, didn't have graduation rate data associated with it. The reasoning for this is explained in the documentation for the graduation rate data: 
+
+> "New York – Data for the New York City School District (NCES LEAID ‘3620580’) has been submitted as a supervisory union with 32 subordinate school districts. Each record within this file includes information about the local education agency (LEA) to which the school belongs. The schools included in this file are reported as they were submitted to EDFacts, with associations for all New York City being to these subordinate school districts. All of the subordinate school districts have the name “New York City Geographic District ##” where ## is a number between 1 and 32. If you are interested in aggregating the submitted school level data to the level of the New York City School District, use the names and LEA IDs in the Table 16 to identify the proper records within the data file."
+
+Unfortunately, our original data set doesn't distinguish between all of these geographical districts, so we will not provide graduation rate data for this conglomerate of 32 districts. 
+
+```{r}
 data_not_joined %>% 
     filter(children < 1000000) %>%
     ggplot(aes(x = children)) + 
     scale_x_log10() + 
     geom_boxplot() + 
     geom_density()
-
 ```
+
 
 About 50% of the school district for which there is no data on graduation rates (didn't join properly, revealed by `anti_join()`) have between 100 and 1000 students---in other words, these are very small school districts. 
 
 It turns out that there was also no graduation rate data for the New York City Department of Education, which is a conglomeration of 32 individual school districts. While we could replace this department of education with its constituent school districts, the data we were given initially in our data set included this row, which is not, in fact, a school district. Now, similar to the New York Times at some of the newer COVID outbreaks, we will ignore New York City in our analysis. Let's reorder some of these columns and output this data to a CSV file. 
 
+# Exporting Data
+
 ```{r}
-names(data_joined)
 data_joined %>%
-    relocate(
+    dplyr::relocate(
         starts_with("grad_rate"), 
         .after = children
     ) %>% 
     write_csv("../data/grad_race_household.csv")
 ```
 
-From EDFacts documentation: 
-
-> "The definition of adjusted four-year cohort graduation rate data provided to the SEAs in the 2008 non-regulatory guidance and for the purposes of submitting data files to EDFacts is 'the number of students who graduate in four years with a regular high school diploma divided by the number of students who form the adjusted cohort for the graduating class.' From the beginning of 9th grade (or the earliest high school grade), students who are entering that grade for the first time form a cohort that is “adjusted” by adding any students who subsequently transfer into the cohort and subtracting any students who subsequently transfer out, emigrate to another country, or die."
