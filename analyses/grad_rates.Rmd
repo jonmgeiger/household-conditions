@@ -8,10 +8,11 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(tidylog)
 ```
 
 ```{r import-data}
-grad_rates <- read_csv("../data/graduation_data.csv", 
+grad_data <- read_csv("../data/graduation_data.csv", 
                        show_col_types = FALSE)
 race_data  <- read_csv("../data/race_join.csv", 
                        show_col_types = FALSE)
@@ -19,31 +20,47 @@ race_data  <- read_csv("../data/race_join.csv",
 
 Let's take a look at the variables in each of these data sets: 
 ```{r}
-grad_rates %>% glimpse()
-race_data  %>% glimpse()
+race_data %>% glimpse()
+grad_data %>% glimpse()
 ```
 
 Graduation Data noticings: 
 
 - Missing data for graduation rates (low, midpoint, high) are encoded as either `NA` or as a negative value
-- One row is one cohort from one school district in one year. We need to filter out the missing data (negatives and NAs), then group by school distric
+- One row is one cohort from one school district in one year. We need to filter out the missing data (negatives and NAs), then group by school district
+
+```{r}
+grad_rates <- grad_data %>% 
+    select(leaid, lea_name, year, cohort_num, grad_rate_midpt, grad_rate_low, grad_rate_high) 
+```
+
+If the variable `cohort_num` represents the number of students in that cohort (rather than the cohort index, *per se*), then we can add the total number of students in a school district in a year by doing the following: 
 
 ```{r}
 grad_rates %>% 
-    filter(year == 2014 && leaid_num == 100005) %>% 
-    count(cohort_num) %>% 
-    ggplot() + 
-    geom_boxplot(mapping = aes(x = n))
-
-grad_rates %>% 
-    filter(year == 2014 && leaid_num == 100005) %>% 
-    filter(cohort_num < 1000) %>%
-    pull(cohort_num) %>% 
-    hist()
-
-grad_rates %>% 
-    filter(year == 2014 & leaid_num == 100005) %>% 
-    arrange(desc(cohort_num)) %>% 
-    count(cohort_num)
-               
+    filter(
+        !is.na(cohort_num),
+        grad_rate_midpt > 0 & grad_rate_low > 0 & grad_rate_high > 0
+    )%>%
+    group_by(
+        leaid, lea_name, year
+    ) %>% 
+    mutate(
+        cohort_total = sum(cohort_num, na.rm = TRUE),
+        cohort_weight = cohort_num/cohort_total,
+        .after = cohort_num
+    ) %>% 
+    summarize(
+        cohort_total = max(cohort_total), 
+        grad_rate_midpt = sum(cohort_weight * grad_rate_midpt), 
+        grad_rate_low = sum(cohort_weight * grad_rate_low), 
+        grad_rate_high = sum(cohort_weight * grad_rate_high)
+    ) %>% 
+    group_by(leaid, lea_name) %>%
+    summarize(
+        grad_rate_midpt = mean(grad_rate_midpt), 
+        grad_rate_low = mean(grad_rate_low), 
+        grad_rate_high = mean(grad_rate_high)
+    )
 ```
+
