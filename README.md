@@ -1,6 +1,6 @@
 # Household Conditions by Geographic School District
 
-[View analyses here!](jonmgeiger.github.io/household-conditions/)
+[View analyses here!](https://jonmgeiger.github.io/household-conditions/)
 
 Sourced from the American Community Survey (ACS) and provided by the [Urban Institute](https://datacatalog.urban.org/dataset/household-conditions-geographic-school-district), this dataset describes the share of households within a geographic school district between 2014 and 2018 under conditions that may affect remote K-12 learning environments. The following page will carfully define each variable in the data set. 
 
