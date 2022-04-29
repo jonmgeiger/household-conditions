@@ -1,0 +1,33 @@
+---
+title: "Exploring Graduation Rates"
+author: "Jon Geiger, Noel Goodwin, Abigail Joppa"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Loading Packages
+
+```{r message = F, warning = F}
+library(tidyverse)
+library(tidylog)
+```
+
+# Loading Data
+
+```{r}
+grad_race_household <- read_csv("../data/grad_race_household.csv")
+grad_race_household_pcts <- grad_race_household %>% 
+    select(-ends_with("moe")) %>%
+    select(dist, grad_rate_midpt, children, starts_with("pct"))
+grad_race_household_pcts %>% 
+    names()
+```
+
+```{r}
+ggplot(grad_race_household_pcts, 
+       aes(x = pct_native, y = grad_rate_midpt)) + 
+    geom_point() + 
+    geom_smooth(method = "lm", se = T)
+
+lm(grad_rate_midpt ~ . - school_ID:children, data = grad_race_household_pcts)
+```
