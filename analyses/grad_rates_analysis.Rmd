@@ -1,11 +1,9 @@
 ---
-title: "Grad Rates: Breif Analysis and Correlation Matrices"
+title: "Grad Rates: Brief Analysis and Correlation Matrices"
 author: "Jon Geiger, Noel Goodwin, Abigail Joppa"
 date: "`r Sys.Date()`"
 output: openintro::lab_report
 ---
-
-
 
 ```{r load-packages, message=FALSE}
 library(tidyverse)
@@ -190,4 +188,12 @@ best_states[,2:ncol(best_states)] %>%
 ```
 
 
+### Visualizations
+
+```{r}
+ggplot(grad_race_HH, 
+       aes(x = pct_native, y = grad_rate_midpt)) + 
+    geom_point(alpha = 0.1) + 
+    geom_smooth(method = "lm", se = T)
+```
 
