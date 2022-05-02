@@ -1,0 +1,193 @@
+---
+title: "Grad Rates: Breif Analysis and Correlation Matrices"
+author: "Jon Geiger, Noel Goodwin, Abigail Joppa"
+date: "`r Sys.Date()`"
+output: openintro::lab_report
+---
+
+
+
+```{r load-packages, message=FALSE}
+library(tidyverse)
+library(openintro)
+library(corrplot)
+```
+
+### Load data and packages
+
+```{r, message=FALSE}
+grad_race_HH <- read_csv("https://github.com/jonmgeiger/household-conditions/raw/main/data/grad_race_household.csv")
+```
+
+### Summary Statistics
+
+Lets take a look at the summary statistics of graduation rates. The average graduation rates across the US is about 87.84. Interestingly, there are school districts that have as low as 3.23 percent graduation rates. 
+```{r} 
+summary(grad_race_HH$grad_rate_midpt)
+```
+
+Taking a closer look with the histogram, we can see that there is an abnormal distribution skewed right with the majority of graduation rates centered between 80 and 90 percent. We are able to see where the outlier school district graduation rates are in the boxplot. Lets take a closer look at these outliers. 
+
+```{r}
+hist(grad_race_HH$grad_rate_midpt)
+
+ggplot(grad_race_HH, aes(x = grad_rate_midpt))+
+  geom_boxplot()
+```
+
+### Outliers
+
+There are 759 school districts that are considered outliers from the normal distribution. The district with the smallest graduation rate is Shannon Country School District with 3.23% graduation rate and 3856 children. Another thing to note is the school district with the second lowest graduation rate is an elementary school district. If there are only Elementary schools in this district, as it is labeled, how did they document a graduation rate? As I continued looking deeper into the schools with the lowest graduation rates, I found that several of them are elementary and middle school districts that do not have high schools. This begs the questions of how many of the outlier districts are elementary/middle school districts and how are they able to document graduation rates? 
+
+```{r}
+grad_race_HH_outliers <- grad_race_HH %>%
+  filter(grad_rate_midpt < 75) %>%
+  select(dist, state, children, grad_rate_midpt) %>%
+  arrange(grad_rate_midpt)
+grad_race_HH_outliers
+
+```
+
+Lets take a look at Shannon County School District. We can see that the household conditions are quite high with about 52% in poverty, 70% with single parents, 50% without computer access ect. We can also see that just over 90 percent of these students are estimated to be native american, so we can assume it is probably located on an Indian reservation. The rest of the student population consists of minority students with no white population. 
+
+US News gives more insight into this school district, reporting that 100% of those attending the school are "economically disadvantaged" https://www.usnews.com/education/best-high-schools/south-dakota/districts/oglala-lakota-county-65-1/oglala-lakota-county-virtual-high-school-92-17876 
+
+Here is a link to the shool district if you are curious: https://www.olcsd.com/
+
+Given this information, it makes sense that graduation rates may be low (or it may be that they are under reported due to lack of resources?) 
+```{r}
+Shannon_County <- grad_race_HH %>%
+  filter(dist == "Shannon County School District 65-1"	) %>%
+  glimpse()
+```
+
+
+### Correlation Matrices
+
+Graduation rates have the strongest negative correlation with households in poverty and those with single parents in the entire US.  
+
+```{r}
+grad_race_HH_corr <- grad_race_HH %>%
+  select(dist, 
+         children, 
+         grad_rate_midpt, 
+         pct_pov:pct_CLI, 
+         pct_hisp_latino, 
+         pct_white, 
+         pct_black, 
+         pct_native, 
+         pct_asian)%>%
+  na.omit()
+
+grad_race_HH_corr[,2:ncol(grad_race_HH_corr)] %>% 
+    cor() %>%
+    corrplot(method = "number")
+
+```
+
+I am curious how this matrix would change if I filtered out the outliers with grad rates specifically. It did not change it much, in fact it made the correlations between grad rates and the household conditions less significant. 
+```{r}
+grad_race_HH_norm <- grad_race_HH%>% 
+  filter(grad_rate_midpt > 75) %>%
+  select(dist, 
+         children, 
+         grad_rate_midpt, 
+         pct_pov:pct_CLI, 
+         pct_hisp_latino, 
+         pct_white, 
+         pct_black, 
+         pct_native, 
+         pct_asian) %>%
+  na.omit()
+
+grad_race_HH_norm[,2:ncol(grad_race_HH_norm)] %>% 
+    cor() %>%
+    corrplot(method = "number")
+```
+Lets look into some regional differences. Here is a correltion matrix of the Bible Belt states. 
+```{r}
+bible_belt <- grad_race_HH %>%
+  filter(state == "Alabama" |
+         state == "Arkansas" |
+         state == "Georgia"|
+         state == "Kentucky"|
+         state == "Louisiana"|
+         state == "Mississippi"|
+         state == "North Carolina"|
+         state == "Oklahoma"|
+         state == "South Carolina"|
+         state == "Tennessee"|
+         state == "Texas"|
+         state == "Utah") %>%
+  select(dist, 
+         children, 
+         grad_rate_midpt, 
+         pct_pov:pct_CLI, 
+         pct_hisp_latino, 
+         pct_white, 
+         pct_black, 
+         pct_native, 
+         pct_asian) %>%
+  na.omit()
+
+bible_belt[,2:ncol(bible_belt)] %>% 
+    cor() %>%
+    corrplot(method = "number")
+```
+
+
+Now lets see about grad rates in states with the "worst" school systems.  (https://www.newsnationnow.com/us-news/list-states-with-the-best-and-worst-public-school-systems/)
+```{r}
+worst_states <- grad_race_HH %>%
+  filter(state == "Alabama" |
+         state == "Alaska" |
+         state == "Arizona"|
+         state == "Louisiana"|
+         state == "New Mexico") %>%
+  select(dist, 
+         children, 
+         grad_rate_midpt, 
+         pct_pov:pct_CLI, 
+         pct_hisp_latino, 
+         pct_white, 
+         pct_black, 
+         pct_native, 
+         pct_asian) %>%
+  na.omit()
+
+worst_states[,2:ncol(worst_states)] %>% 
+    cor() %>%
+    corrplot(method = "number")
+
+
+```
+
+
+What about the states with the "best" school systems? This plot is especially fascinating with a significantly higher negative correlation between grad rates and household conditions, as well as for black and Hispanic students. 
+```{r}
+
+best_states <- grad_race_HH %>%
+  filter(state == "Massachusetts" |
+         state == "Connecticut" |
+         state == "New Jersey"|
+         state == "Virginia"|
+         state == "New Hampshire") %>%
+  select(dist, 
+         children, 
+         grad_rate_midpt, 
+         pct_pov:pct_CLI, 
+         pct_hisp_latino, 
+         pct_white, 
+         pct_black, 
+         pct_native, 
+         pct_asian) %>%
+  na.omit()
+
+best_states[,2:ncol(best_states)] %>% 
+    cor() %>%
+    corrplot(method = "number")
+
+```
+
+
+
