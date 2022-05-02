@@ -17,7 +17,7 @@ library(openintro)
 ```{r, message=FALSE}
 public_schools <- read_csv("../data/public_schools.csv")
 grad_race_HH <- read_csv("../data/grad_race_household.csv")
-View(grad_race_HH)
+# View(grad_race_HH)
 ```
 
 Because there are schools included in this dataset that are not in the US, we are going to filter out all schools that are not in the US. Additionally, lets get rid of any variables that are irrelevant to our join with the household data or future analyses. 
@@ -131,3 +131,9 @@ high_dist%>%
 This removed 74,498 schools, leaving only 26,457 schools in the data set that are likely high schools. This included most of the schools in the "other" category, as well as four schools categorized as "middle".
 
 
+# Exporting Data
+
+```{r}
+write_csv(high_dist, 
+          "../data/school_grad_race_hh.csv")
+```
