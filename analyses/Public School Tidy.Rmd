@@ -1,11 +1,11 @@
 ---
 title: "Public School Tidy and Join"
-author: "John Geiger, Noel Goodwin, Abigail Joppa"
+author: "Jon Geiger, Noel Goodwin, Abigail Joppa"
 date: "`r Sys.Date()`"
 output: openintro::lab_report
 ---
 
-```{r load-packages, message=FALSE}
+```{r load-packages, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(tidylog)
 library(openintro)
@@ -15,10 +15,9 @@ library(openintro)
 ### Import data
 
 ```{r, message=FALSE}
-public_schools <- read_csv("Public_Schools.csv")
-grad_race_HH <- read_csv("https://github.com/jonmgeiger/household-conditions/raw/main/data/grad_race_household.csv")
+public_schools <- read_csv("../data/public_schools.csv")
+grad_race_HH <- read_csv("../data/grad_race_household.csv")
 View(grad_race_HH)
-
 ```
 
 Because there are schools included in this dataset that are not in the US, we are going to filter out all schools that are not in the US. Additionally, lets get rid of any variables that are irrelevant to our join with the household data or future analyses. 
