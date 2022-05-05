@@ -40,10 +40,12 @@ US_PS <- public_schools %>%
 
 
 
-In order to join these schools with their coinciding school district, we must match both the LEAID (district ID) from the household district data to the first 7 digits of the NCEID (LEAID + unique school ID). Note: the variable titled DISTRICTID does not match any district id included in the household dataset. 
+In order to join these schools with their coinciding school district, we must match both the LEAID (district ID) from the household district data to the first 7 digits of the NCEID (LEAID + unique school ID). Note: the variable titled DISTRICTID does not match any district id included in the household dataset. I will also duplicate the NCESID so we can use it for future joins. 
 ```{r}
 US_PS <- US_PS %>%
-  separate(col = NCESID, into = c("LEAID", "other_school_code"), sep = 7) 
+  mutate(NCESID_sep = NCESID)%>%
+  separate(col = NCESID_sep, into = c("LEAID", "school_code"), sep = 7) 
+
 ```
 
 
@@ -74,12 +76,12 @@ Lets clean up the dataset by getting rid of any useless variables.
 
 school_dist_clean <- school_dist_join %>%
   select(-OBJECTID, 
-         -other_school_code, 
          -ADDRESS, 
          -LATITUDE, 
+         -school_ID,
          -LONGITUDE, 
          -FT_TEACHER, 
-         -school_ID,
+         -DISTRICTID,
          -ZIP, 
          -STATE, 
          -year)%>%
