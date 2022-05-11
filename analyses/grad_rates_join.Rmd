@@ -16,7 +16,7 @@ library(tidylog)
 ```{r import-data}
 grad_data <- read_csv("../data/grad.csv", 
                        show_col_types = FALSE)
-race_data  <- read_csv("../data/race_household.csv", 
+race_data  <- read_csv("../data/raceP_household.csv", 
                        show_col_types = FALSE)
 ```
 
@@ -140,6 +140,6 @@ data_joined %>%
         starts_with("grad_rate"), 
         .after = children
     ) %>% 
-    write_csv("../data/grad_race_household.csv")
+    write_csv("../data/grad_raceP_household.csv")
 ```
 

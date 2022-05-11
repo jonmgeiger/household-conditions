@@ -14,7 +14,7 @@ library(corrplot)
 ### Load data and packages
 
 ```{r, message=FALSE}
-grad_race_HH <- read_csv("https://github.com/jonmgeiger/household-conditions/raw/main/data/grad_race_household.csv")
+grad_race_HH <- read_csv("../data/grad_raceP_household.csv")
 ```
 
 ### Summary Statistics
@@ -102,7 +102,7 @@ grad_race_HH_norm[,2:ncol(grad_race_HH_norm)] %>%
     cor() %>%
     corrplot(method = "number")
 ```
-Lets look into some regional differences. Here is a correltion matrix of the Bible Belt states. 
+Lets look into some regional differences. Here is a correlation matrix of the Bible Belt states. 
 ```{r}
 bible_belt <- grad_race_HH %>%
   filter(state == "Alabama" |
