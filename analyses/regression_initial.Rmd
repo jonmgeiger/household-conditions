@@ -36,21 +36,40 @@ data_standardized <- data %>%
 
 Now that the variables are standardized, let's check out what a simple linear regression model with all variables as predictors would look like. 
 
-# Initial Analysis
+# Initial HH Conditions Analysis
 
 We will first construct a simple linear regression model using all household conditions as predictors. 
 
 ```{r}
-nrow(data_standardized)
-
-model_df <- data_standardized %>% 
+full_df <- data_standardized %>% 
     select(pct_pov:pct_PI, grad_rate_midpt)
 
-lm(grad_rate_midpt ~ ., data = model_df) %>%
-    summary()
+hh_df <- full_df %>%
+    select(pct_pov:pct_CLI, grad_rate_midpt)
+
+race_df <- full_df %>% 
+    select(pct_hisp_latino:pct_PI, grad_rate_midpt)
+
+hh_model <- lm(grad_rate_midpt ~ ., data = hh_df)
+race_model <- lm(grad_rate_midpt ~ ., data = race_df)
+full_model <- lm(grad_rate_midpt ~ ., data = full_df)
+
+summary(hh_model)
+summary(race_model)
+summary(full_model)
 ```
 
 We can immediately notice that some of these predictors are extremely significant in terms of being able to predict graduation rate. Factors such as `pct_pov`, `pct_SP`, `pct_hisp_latino`, `pct_white`, and `pct_asian` are all significant with p-values less than 2e-16. 
+
+We can run a quick ANOVA comparison between the model with just household conditions and the model with all predictors, in order to see if the model with race data provides a statistically significant improvement in the model. 
+
+```{r}
+anova(hh_model, full_model)
+anova(race_model, full_model)
+```
+
+We can see that for both the race-only and the hh-conditions-only models, including the other set of data does provide a significant decrease in the model RSS. 
+
 
 # Best Subset Analysis
 
@@ -58,8 +77,8 @@ In order to choose the best set of predictors, we will perform best subset analy
 
 ```{r}
 fit_full <- regsubsets(grad_rate_midpt ~ ., 
-                       data = model_df, 
-                       nvmax = ncol(model_df) - 1)
+                       data = full_df, 
+                       nvmax = ncol(full_df) - 1)
 reg_summary <- summary(fit_full)
 reg_summary
 ```
