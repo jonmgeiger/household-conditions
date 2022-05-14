@@ -1,0 +1,241 @@
+---
+title: "Predictor Distributions"
+author: "Jon Geiger, Noel Goodwin, Abigail Joppa"
+date: "`r Sys.Date()`"
+output: openintro::lab_report
+---
+
+```{r load-packages, message=FALSE}
+library(tidyverse)
+library(openintro)
+library(scales)
+library(ggthemes)
+library(corrplot)
+
+theme_set(theme_clean())
+```
+
+# Import Data
+
+```{r}
+data <- read_csv("../data/grad_raceP_household.csv") %>% 
+    select(-student_total)
+data <- data %>%
+    select(dist, children, 
+           grad_rate_midpt, 
+           starts_with("pct"), 
+           -pct_PI) %>% 
+    mutate(
+        across(.cols = pct_pov:pct_CLI, 
+               .fns = function(x) {round(x*100, 3)})
+    )
+names(data)
+```
+
+# Variable Distributions
+
+Let's look at the distributions of all the different variables.
+
+```{r}
+data %>%
+    pivot_longer(cols = contains("pct"), 
+                 names_to = "type", 
+                 values_to = "vals") %>%
+    ggplot(aes(x = vals)) + 
+    geom_histogram() + 
+    facet_wrap(vars(type))
+```
+
+```{r}
+data %>%
+    select(pct_native) %>% 
+    filter(pct_native > 0) %>%
+    na.omit() %>%
+    ggplot(aes(x = pct_native)) + 
+    geom_histogram()
+```
+
+# Most Predominant Race
+
+Because of the heavy right skew of the distribution of Native American proportions across school districts, we will replace this column with an indicator. To account for all the difference races, we can make this indicator column correspond to which race is the predominant race, indicated by a given race having the maximum proportion in the partition of races within a given school district. 
+
+```{r}
+data <- data %>%
+    select(11:15) %>%
+    mutate(
+        predom_race = names(.)[max.col(.)],
+        predom_race = predom_race %>% 
+            str_replace_all("pct_", ""), 
+        predom_race = predom_race %>% 
+            factor(levels = c("hisp_latino", "white", 
+                              "black", "native", "asian"), 
+                   labels = c("Hispanic/Latino", "White", 
+                              "Black", "Native American", "Asian")
+            )
+    ) %>%
+    select(predom_race) %>% 
+    bind_cols(data) %>%
+    relocate(predom_race, .after = children) 
+
+data %>%
+    count(predom_race)
+```
+
+# Grad Rates by Most Predominant Race
+
+Now that we've added an indicator for the predominant race, let's visualize some of the graduation rates as broken up by that most predominant race. 
+
+```{r}
+data %>% 
+    filter(!is.na(predom_race)) %>%
+    ggplot(aes(
+        x = grad_rate_midpt, 
+        y = after_stat(density)
+    )) + 
+    geom_freqpoly(aes(color = predom_race)) + 
+    scale_x_continuous(labels = scales::percent_format(scale = 1)) + 
+    labs(x = "Graduation Rate", 
+         y = "", 
+         title = "Graduation Rate Distribution per Race", 
+         fill = "Predominant Race", 
+         color = "Predominant Race")
+
+data %>% 
+    filter(!is.na(predom_race)) %>%
+    ggplot(aes(
+        x = grad_rate_midpt, 
+        y = after_stat(density)
+    )) + 
+    geom_histogram(aes(color = predom_race, 
+                       fill = predom_race)) + 
+    geom_freqpoly(aes(color = predom_race)) + 
+    scale_x_continuous(labels = scales::percent_format(scale = 1)) + 
+    labs(x = "Graduation Rate", 
+         y = "", 
+         title = "Graduation Rate Distribution per Race", 
+         fill = "Predominant Race", 
+         color = "Predominant Race")
+
+data %>% 
+    filter(!is.na(predom_race)) %>%
+    ggplot(aes(
+        x = grad_rate_midpt, 
+        y = after_stat(density)
+    )) + 
+    geom_histogram() + 
+    geom_density() + 
+    facet_grid(rows = vars(predom_race)) + 
+    scale_x_continuous(labels = scales::percent_format(scale = 1)) + 
+    labs(x = "Graduation Rate", 
+         y = "", 
+         title = "Graduation Rate Distribution per Race")
+```
+
+# Predictor Distributions by Most Prevalent Race
+
+Now that we've split up our school districts by the most prevalent race in that district, we can now look at the distributions of our household conditions by race to see what we can see. 
+
+```{r, fig.width=8, fig.height=8}
+data %>%
+    select(!(pct_hisp_latino:last_col())) %>%
+    pivot_longer(cols = contains("pct"), 
+                 names_to = "type", 
+                 values_to = "vals") %>%
+    ggplot(aes(x = vals, y = after_stat(density))) + 
+    geom_histogram() + 
+    facet_grid(rows = vars(type), 
+               cols = vars(predom_race))
+```
+
+
+
+# Variable Correlations per Predominant Racial Group
+
+## Hispanic/Latino
+
+```{r}
+hh_conds <- data %>% 
+    select(predom_race, pct_pov:pct_CLI) %>%
+    filter(!is.na(predom_race))
+
+races <- hh_conds %>% 
+    count(predom_race) %>% 
+    pull(predom_race) %>% 
+    as.character()
+
+
+hh_conds %>%
+    filter(
+        predom_race == races[1]
+    ) %>% 
+    select(!predom_race) %>%
+    cor() %>%
+    corrplot(method = "number")
+```
+
+For school districts which are primarily Hispanic/Latino, we can see that the following variables are moderately correlated with each other ($|r| > 0.4$): 
+- Percent Poverty and Percent Single Parent
+- Percent Poverty and Percent No Computer/Internet Access
+- Percent Crowded Conditions and Percent of Linguistically Isolated Children
+
+## White
+
+```{r}
+hh_conds %>%
+    filter(
+        predom_race == races[2]
+    ) %>% 
+    select(!predom_race) %>%
+    cor() %>%
+    corrplot(method = "number")
+```
+
+For school districts which are primarily White, we can see that the following variables are moderately correlated with each other ($|r| > 0.4$): 
+- Percent Poverty and Percent Single Parent
+- Percent Poverty and Percent No Computer/Internet Access
+
+## Black
+
+```{r}
+hh_conds %>%
+    filter(
+        predom_race == races[3]
+    ) %>% 
+    select(!predom_race) %>%
+    cor() %>%
+    corrplot(method = "number")
+```
+
+For school districts which are primarily Black, we can see that the following variables are moderately correlated with each other ($|r| > 0.4$): 
+- Percent Poverty and Percent Single Parent
+- Percent Poverty and Percent No Computer/Internet Access
+
+## Native American
+
+```{r}
+hh_conds %>%
+    filter(
+        predom_race == races[4]
+    ) %>% 
+    select(!predom_race) %>%
+    cor() %>%
+    corrplot(method = "number")
+```
+
+For school districts which are primarily White, we can see that the following variables are moderately correlated with each other ($|r| > 0.4$): 
+- Percent Poverty and Percent Crowded Conditions
+- Percent Poverty and Percent No Computer/Internet Access
+
+## Asian
+
+```{r}
+hh_conds %>%
+    filter(
+        predom_race == races[5]
+    ) %>% 
+    select(!predom_race) %>%
+    cor() %>%
+    corrplot(method = "number")
+```
+
+For school districts which are primarily Asian, we can see that almost all of the variables are strongly correlated with one another. This will require some thought for our regression analysis, though it is important to note that there are only 51 school districts recorded which are predominantly Asian.
