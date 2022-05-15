@@ -1,0 +1,133 @@
+---
+title: "Joining Revenue per Child"
+author: "John Geiger, Noel Goodwin, Abigail Joppa"
+date: "`r Sys.Date()`"
+output: openintro::lab_report
+---
+
+```{r load-packages, message=FALSE}
+library(tidyverse)
+library(readr)
+library(corrplot)
+```
+
+### Download Packages
+
+```{r}
+finance_data <- read_csv("../data/finance_data.csv")
+grad_raceP_household <- read_csv("../data/grad_raceP_household.csv")
+
+```
+
+
+### Average revenue (2014-2017)
+
+Lets filter by revenues that are above 0 and group by LEAID so we can average the total revenue across all four years.  Note: the finance data does not include year 2018. 
+```{r}
+finance_per_student <- finance_data %>%
+  filter(rev_total > 0) %>%
+  group_by(leaid)%>%
+  summarize(rev_total_avg = mean(rev_total))
+
+```
+
+
+### Join by LEAID
+
+```{r}
+finance_hh_join <- grad_raceP_household %>%
+  left_join(finance_per_student, by = c("LEAID" = "leaid"))
+
+finance_hh_join %>%
+  is.na()%>%
+  colSums
+```
+There are about 1522 missing total revenues. We would expect 1404 revenue values not to join because we are missing LEAIDs for 1404 districts. However, there are 118 districts that do not have finance information. This number is relatively small, so we don't need to be super concerned about it. 
+
+### Total Revenue per Child
+
+Now lets divide the revenue by the number of children in each district. This will give us a more accurate way to compare the districts. 
+```{r}
+grad_raceP_household_rev <- finance_hh_join %>%
+  mutate(rev_per_cap = rev_total_avg/children)
+```
+
+Lets checkout the distribution of revenue per student. It looks like there is an extreme outlier that has almost 800 thousand dollars in funding per student. This makes sense given that there are only 9 children that are documented to attend Boys Ranch Independent School District. 
+```{r}
+
+ggplot(grad_raceP_household_rev, aes(x=rev_per_cap)) +
+  geom_boxplot()
+
+ grad_raceP_household_rev %>%
+  select(dist, state, children, rev_per_cap)%>%
+  arrange(desc(rev_per_cap))
+
+```
+
+Lets take the outlier out and see what our distribution looks like. 
+```{r}
+ grad_raceP_household_rev <- grad_raceP_household_rev %>%
+  filter(rev_per_cap < 700000)
+
+ggplot(grad_raceP_household_rev, aes(x=rev_per_cap)) +
+  geom_boxplot()
+
+ggplot(grad_raceP_household_rev, aes(x=rev_per_cap)) +
+  geom_histogram(bins = 100)
+
+ grad_raceP_household_rev %>%
+  select(dist, state, children, rev_per_cap)%>%
+  arrange(desc(rev_per_cap))
+```
+This is better, but we still have a significant number of outliers. 
+
+It looks like filtering the data to only include districts with more than 10,000 students does not change the nature of the distribution. We can see through the histogram that this distribution is highly skewed to the right. 
+
+```{r}
+grad_raceP_household_rev_filtered <- grad_raceP_household_rev %>%
+  filter(children < 10000)
+
+ggplot(grad_raceP_household_rev_filtered, aes(x=rev_per_cap)) +
+  geom_boxplot()
+
+ggplot(grad_raceP_household_rev_filtered, aes(x=rev_per_cap)) +
+  geom_histogram(bins = 100)
+```
+Here is the joined data set that includes the HH conditions, race data and total revenue. 
+```{r}
+ grad_raceP_household_rev %>% 
+  write_csv(file = "../data/grad_raceP_household_rev.csv")
+```
+
+I am curious how total revenue per child is correlated with grad rates, hh conditions and race.  
+
+### Correlations
+
+#### Race and total revenue per child correlation 
+
+```{r}
+ grad_raceP_household_rev_race <- grad_raceP_household_rev %>%
+  select(grad_rate_midpt, pct_hisp_latino:pct_PI, rev_per_cap) %>%
+  na.omit()
+
+grad_raceP_household_rev_race[,1:ncol(grad_raceP_household_rev_race)] %>% 
+    cor() %>%
+    corrplot(method = "number")
+```
+It looks like revenue per student does not correlate with race at all. 
+
+#### HH conditions and total revenue per child correlation
+
+```{r}
+grad_raceP_household_rev_HHC <- grad_raceP_household_rev %>%
+  select(grad_rate_midpt:pct_CLI, rev_per_cap) %>%
+  na.omit()
+
+grad_raceP_household_rev_HHC[,1:ncol(grad_raceP_household_rev_HHC)] %>% 
+    cor() %>%
+    corrplot(method = "number")
+
+```
+
+
+It looks like revenue per student does not correlate with household conditions at all. These findings are perplexing. We would have guessed that total revenue per student would be correlated to a certain extent with race or household conditions, or even graduation rates.This makes me wonder if it would make more sense to use a different revenue calculation rather than the total. These are divided by federal revenue, state revenue, and local revenue. Perhaps local or state revenue would be more correlated with our other indicators.  
