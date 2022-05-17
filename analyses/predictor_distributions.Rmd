@@ -239,3 +239,10 @@ hh_conds %>%
 ```
 
 For school districts which are primarily Asian, we can see that almost all of the variables are strongly correlated with one another. This will require some thought for our regression analysis, though it is important to note that there are only 51 school districts recorded which are predominantly Asian.
+
+
+# Export Data
+
+```{r}
+write_csv(data, "../data/grad_predom-raceP_household.csv")
+```
