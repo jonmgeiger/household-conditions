@@ -22,5 +22,6 @@ The joined datasets are titled according to which datasets are included in the j
 - **grad** = Graduation Rates  
 - **race** =  Race Data   
 - **raceP** = Race Data, pruned (extraneous variables removed)
+  - **predom** = includes predominant race column
 - **household/HH** = Household Conditions data   
 - **school** = Public School data  
