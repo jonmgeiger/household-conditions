@@ -1,0 +1,146 @@
+---
+title: "Regression Modeling with `tidymodels`"
+author: "Jon Geiger, Noel Goodwin, Abigail Joppa"
+date: "`r Sys.Date()`"
+output: openintro::lab_report
+---
+
+```{r load-packages, message=FALSE}
+library(tidyverse)
+library(tidylog)
+library(tidymodels)
+library(vip)
+```
+
+# Data Import
+
+```{r}
+data <- read_csv("../data/grad_predom-raceP_household.csv") %>%
+    filter(!is.na(grad_rate_midpt))
+
+data %>% head(5)
+```
+
+# Data Splitting and Folding
+
+Our goal is to create a regression model to predict graduation rate from household conditions and race data. We will use the `tidymodels` framework for analysis by creating an initial split (stratifying by predominant race) of training and testing data. We will also create 10 fold for 10-fold cross-validation.
+
+```{r}
+set.seed(1234)
+distr_split <- initial_split(data, strata = predom_race)
+distr_train <- training(distr_split)
+distr_test  <- testing(distr_split)
+
+set.seed(4321)
+distr_folds <- vfold_cv(distr_train, v = 10, strata = predom_race)
+```
+
+# Preprocessing
+
+We can now create a recipe, or a preprocessor, which can help us by creating dummy variables for our nominal variable(s), as well as centering and scaling our predictors, and removing all near-zero-variance predictors. 
+
+```{r}
+distr_rec <- 
+    recipe(grad_rate_midpt ~ ., data = distr_train) %>%
+    update_role(dist, new_role = "uid") %>%
+    step_factor2string(dist) %>%
+    step_scale(all_numeric_predictors()) %>%
+    step_center(all_numeric_predictors()) %>%
+    step_nzv(all_numeric_predictors()) %>%
+    step_dummy(predom_race)
+```
+
+# Model Specifications
+
+We'll now create some specifications, or types of models, which we will integrate into our workflow. We'll make a basic linear regression model, a lasso regression model, and an XGBoost model. 
+
+```{r}
+lm_spec <- 
+    linear_reg() %>%
+    set_engine("lm")
+
+lasso_spec <- 
+    linear_reg(
+        mixture = 1,
+        penalty = tune() 
+    ) %>%
+    set_engine("glmnet")
+
+xgb_spec <- 
+    boost_tree(
+        trees = 1000, 
+        tree_depth = tune(),
+        min_n = tune(),
+        mtry = tune(),
+        sample_size = tune(),
+        learn_rate = tune()
+    ) %>%
+    set_engine("xgboost") %>%
+    set_mode("regression")
+
+distr_models <- 
+    workflow_set(
+        preproc = list(clean = distr_rec), 
+        models = list(lm = lm_spec, 
+                      lasso = lasso_spec, 
+                      xgboost = xgb_spec), 
+        cross = TRUE
+    )
+```
+
+# Model Training
+
+We can now tune our models: 
+
+```{r, eval = F}
+doParallel::registerDoParallel()
+
+set.seed(2314)
+distr_tune <- 
+    distr_models %>%
+    workflow_map("tune_grid", 
+                 resamples = distr_folds, 
+                 grid = 20, 
+                 metrics = metric_set(rmse, rsq), 
+                 verbose = TRUE)
+
+saveRDS(distr_tune, "trained_models/distr_tune.rds")
+```
+
+# Model Evaluation
+
+```{r}
+distr_tune <- readRDS("trained_models/distr_tune.rds")
+
+autoplot(distr_tune, select_best = FALSE)
+
+best_results <- 
+    distr_tune %>%
+    extract_workflow_set_result("clean_xgboost") %>%
+    select_best(metric = "rmse")
+
+best_results
+
+boosting_test_results <- 
+    distr_tune %>%
+    extract_workflow("clean_xgboost") %>%
+    finalize_workflow(best_results) %>%
+    last_fit(split = distr_split)
+
+collect_metrics(boosting_test_results)
+
+boosting_test_results %>%
+    collect_predictions() %>%
+    ggplot(aes(x = grad_rate_midpt, y = .pred)) + 
+    geom_abline(color = "gray50", lty = 2) + 
+    geom_point(alpha = 0.5) + 
+    coord_obs_pred() + 
+    labs(x = "observed graduation rate", y = "predicted graduation rate", 
+         title = "Predicted vs. Observed Graduation Rate with XGBoost")
+
+boosting_test_results %>%
+    extract_workflow() %>%
+    extract_fit_parsnip() %>%
+    vip(geom = "point", num_features = 10)
+```
+
