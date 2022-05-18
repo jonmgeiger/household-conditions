@@ -6,65 +6,120 @@ output: openintro::lab_report
 ---
 
 ```{r load-packages, message=FALSE}
-library(tidyverse)
-library(tidylog)
-library(tidymodels)
-library(vip)
+library(tidyverse, warn.conflicts = F)
+library(tidymodels, warn.conflicts = F)
 ```
 
 # Data Import
 
-```{r}
+```{r import-data}
 data <- read_csv("../data/grad_predom-raceP_household.csv") %>%
     filter(!is.na(grad_rate_midpt))
 
-data %>% head(5)
+data %>% skimr::skim()
 ```
 
 # Data Splitting and Folding
 
 Our goal is to create a regression model to predict graduation rate from household conditions and race data. We will use the `tidymodels` framework for analysis by creating an initial split (stratifying by predominant race) of training and testing data. We will also create 10 fold for 10-fold cross-validation.
 
-```{r}
+```{r split-folds}
 set.seed(1234)
-distr_split <- initial_split(data, strata = predom_race)
+distr_split <- initial_split(data)
 distr_train <- training(distr_split)
 distr_test  <- testing(distr_split)
 
 set.seed(4321)
-distr_folds <- vfold_cv(distr_train, v = 10, strata = predom_race)
+distr_folds <- vfold_cv(distr_train, v = 10)
 ```
 
 # Preprocessing
 
 We can now create a recipe, or a preprocessor, which can help us by creating dummy variables for our nominal variable(s), as well as centering and scaling our predictors, and removing all near-zero-variance predictors. 
 
-```{r}
+```{r create-recipe}
 distr_rec <- 
     recipe(grad_rate_midpt ~ ., data = distr_train) %>%
-    update_role(dist, new_role = "uid") %>%
+    update_role(dist, new_role = "ID") %>%
     step_factor2string(dist) %>%
+    step_interact(~ all_numeric_predictors():all_numeric_predictors()) %>%
+    step_dummy(all_nominal_predictors()) %>%
     step_scale(all_numeric_predictors()) %>%
     step_center(all_numeric_predictors()) %>%
-    step_nzv(all_numeric_predictors()) %>%
-    step_dummy(predom_race)
+    step_nzv(all_numeric_predictors())
+distr_rec %>%
+    prep() %>%
+    bake(new_data = NULL)
 ```
 
 # Model Specifications
 
-We'll now create some specifications, or types of models, which we will integrate into our workflow. We'll make a basic linear regression model, a lasso regression model, and an XGBoost model. 
+We'll now create some specifications, or types of models, which we will integrate into our workflow. We'll make the following models: 
 
-```{r}
-lm_spec <- 
+- Linear Regression (`lm`)
+- Lasso Regression (`glmnet`)
+- (NOT WORKING) Partial Least Squares (`mixOmics`) 
+- Multivariate Adaptive Regression Spline (`earth`)
+- Support Vector Regression (`kernlab`)
+- Decision Tree (`rpart`)
+- Random Forest (`ranger`)
+- Gradient Boosted Trees (`xgboost`)
+- K-Nearest Neighbors (`kknn`)
+
+```{r create-specs}
+lm_spec <-
     linear_reg() %>%
-    set_engine("lm")
+    set_engine('lm')
 
-lasso_spec <- 
+lasso_spec <-
     linear_reg(
-        mixture = 1,
-        penalty = tune() 
+        mixture = 1, 
+        penalty = tune()
     ) %>%
-    set_engine("glmnet")
+    set_engine('glmnet')
+
+# pls_spec <-
+#     pls(
+#         predictor_prop = tune(), 
+#         num_comp = tune()
+#     ) %>%
+#     set_engine('mixOmics') %>%
+#     set_mode('regression')
+
+# ^ mixOmics package not available for R 4.1.3
+
+mars_spec <-
+    mars(
+        prod_degree = tune()
+    ) %>%
+    set_engine('earth') %>%
+    set_mode('regression')
+
+svm_spec <-
+    svm_linear(
+        cost = tune(), 
+        margin = tune()
+    ) %>%
+    set_engine('kernlab') %>%
+    set_mode('regression')
+
+dtree_spec <-
+    decision_tree(
+        tree_depth = tune(), 
+        min_n = tune(), 
+        cost_complexity = tune()
+    ) %>%
+    set_engine('rpart') %>%
+    set_mode('regression')
+
+rf_spec <-
+    rand_forest(
+        trees = 1000,
+        mtry = tune(),
+        min_n = tune()
+    ) %>%
+    set_engine('ranger') %>%
+    set_mode('regression')
 
 xgb_spec <- 
     boost_tree(
@@ -78,69 +133,104 @@ xgb_spec <-
     set_engine("xgboost") %>%
     set_mode("regression")
 
-distr_models <- 
+knn_spec <-
+    nearest_neighbor(
+        neighbors = tune(), 
+        weight_func = tune(), 
+        dist_power = tune()
+    ) %>%
+    set_engine('kknn') %>%
+    set_mode('regression')
+```
+
+Now that we have our model specifications, we can put all of these into a workflow set. 
+```{r create-workflowset}
+distr_workflowset <- 
     workflow_set(
-        preproc = list(clean = distr_rec), 
-        models = list(lm = lm_spec, 
-                      lasso = lasso_spec, 
-                      xgboost = xgb_spec), 
-        cross = TRUE
-    )
+        preproc = list("rec" = distr_rec), 
+        models = list(
+            "lm" = lm_spec, 
+            "lasso" = lasso_spec, 
+            # "pls" = pls_spec, 
+            "mars" = mars_spec, 
+            "svm" = svm_spec, 
+            "dtree" = dtree_spec, 
+            "rf" = rf_spec, 
+            "xgboost" = xgb_spec, 
+            "knn" = knn_spec
+        )
+    ) %>%
+    mutate(wflow_id = wflow_id %>% str_remove_all("rec_"))
+distr_workflowset
+
 ```
 
 # Model Training
 
 We can now tune our models: 
 
-```{r, eval = F}
-doParallel::registerDoParallel()
+```{r model-train, eval = F}
+distr_grid_ctrl <- 
+    control_grid(
+        save_pred = TRUE, 
+        parallel_over = "everything", 
+        save_workflow = TRUE
+    )
 
-set.seed(2314)
+doParallel::registerDoParallel(cores = 11)
 distr_tune <- 
-    distr_models %>%
-    workflow_map("tune_grid", 
-                 resamples = distr_folds, 
-                 grid = 20, 
-                 metrics = metric_set(rmse, rsq), 
-                 verbose = TRUE)
+    distr_workflowset %>%
+    workflow_map("tune_grid", seed = 2314, 
+                resamples = distr_folds, 
+                grid = 30, 
+                control = distr_grid_ctrl, 
+                verbose = TRUE)
+)
 
 saveRDS(distr_tune, "trained_models/distr_tune.rds")
 ```
 
 # Model Evaluation
 
-```{r}
+```{r model-load}
 distr_tune <- readRDS("trained_models/distr_tune.rds")
+```
 
-autoplot(distr_tune, select_best = FALSE)
+```{r model-evaluation}
+autoplot(distr_tune, select_best = TRUE)
+
+(ranks <- distr_tune %>%
+    rank_results(select_best = TRUE) %>%
+    select(-std_err) %>%
+    pivot_wider(names_from = .metric, values_from = mean) %>%
+    select(wflow_id, rank, rmse, rsq))
+
+(best_wflow_id <- ranks %>% 
+    head(1) %>% pull(wflow_id))
 
 best_results <- 
     distr_tune %>%
-    extract_workflow_set_result("clean_xgboost") %>%
+    extract_workflow_set_result(best_wflow_id) %>%
     select_best(metric = "rmse")
 
 best_results
 
-boosting_test_results <- 
+
+test_results <- 
     distr_tune %>%
-    extract_workflow("clean_xgboost") %>%
+    extract_workflow(best_wflow_id) %>%
     finalize_workflow(best_results) %>%
     last_fit(split = distr_split)
 
-collect_metrics(boosting_test_results)
+collect_metrics(test_results)
 
-boosting_test_results %>%
+test_results %>%
     collect_predictions() %>%
     ggplot(aes(x = grad_rate_midpt, y = .pred)) + 
     geom_abline(color = "gray50", lty = 2) + 
     geom_point(alpha = 0.5) + 
     coord_obs_pred() + 
     labs(x = "observed graduation rate", y = "predicted graduation rate", 
-         title = "Predicted vs. Observed Graduation Rate with XGBoost")
+         title = paste0("Predicted vs. Observed Graduation Rate with ", best_wflow_id))
 
-boosting_test_results %>%
-    extract_workflow() %>%
-    extract_fit_parsnip() %>%
-    vip(geom = "point", num_features = 10)
 ```
-
