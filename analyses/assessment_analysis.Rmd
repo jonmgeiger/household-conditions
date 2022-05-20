@@ -1,0 +1,181 @@
+---
+title: "School Assessment Analysis"
+author: "John Geiger, Noel Goodwin, Abigail Joppa"
+date: "`r Sys.Date()`"
+output: openintro::lab_report
+---
+
+## Load packages 
+
+```{r load-packages, message=FALSE}
+
+library(tidyverse)
+library(readr)
+library(corrplot)
+
+school_assess <- read_csv("../data/school_assess.csv")
+grad_raceP_household_rev <- read_csv("../data/grad_raceP_household_rev.csv")
+
+
+```
+
+## Average assessment scores 2014-2018 
+
+Lets calculate the average reading and math assessment scores for each district over 5 years. 
+
+```{r}
+school_assess <- school_assess %>%
+  filter(read_test_pct_prof_midpt > 0, 
+         math_test_pct_prof_midpt > 0) %>%
+  group_by(leaid)%>%
+  summarize(read_score = mean(read_test_pct_prof_midpt), 
+            math_score = mean(math_test_pct_prof_midpt))
+```
+
+
+## Reading Scores
+
+Lets check out the distribution of reading scores. There is quite a lot of variability in reading scores, but the bulk of the reading scores tend to be between about 40 and 75. 
+```{r}
+school_assess %>%
+  ggplot(aes(x=read_score)) +
+  geom_histogram(bins = 100)+
+  theme_minimal()
+
+ggplot(school_assess, aes(x=read_score)) +
+  geom_boxplot()+
+  theme_minimal()
+```
+
+## Math Scores
+
+The math scores are also pretty variable and ranges between 0 and 100. The average math scores tend to be lower than the reading scores with the bulk of the districts having scores between 25 and 63. 
+
+```{r}
+ggplot(school_assess, aes(x=math_score)) +
+  geom_histogram(bins = 100)+
+  theme_minimal()
+
+ggplot(school_assess, aes(x=math_score)) +
+  geom_boxplot()+
+  theme_minimal()
+```
+
+## Join by LEAID 
+
+```{r}
+district_assess <- grad_raceP_household_rev %>%
+  left_join(school_assess, by = c("LEAID" = "leaid"))
+```
+
+
+## Add Predominant Rate Indicator 
+
+```{r}
+district_assess <- district_assess %>%
+    select(17:22) %>%
+    mutate(
+        predom_race = names(.)[max.col(.)],
+        predom_race = predom_race %>% 
+            str_replace_all("pct_", ""), 
+        predom_race = predom_race %>% 
+            factor(levels = c("hisp_latino", "white", 
+                              "black", "native", "asian"), 
+                   labels = c("Hispanic/Latino", "White", 
+                              "Black", "Native American", "Asian")
+            )
+    ) %>%
+    select(predom_race) %>% 
+    bind_cols(district_assess) %>%
+    relocate(predom_race, .after = pct_CLI) 
+
+district_assess %>%
+    count(predom_race)
+```
+
+## Correlations
+
+### HH Conditions and Assessment Correlation
+
+
+It appears that pct poverty is negatively correlated with both assessments but more so with reading scores. Additionally, we can see that graduation rates are positively correlated with reading and math scores. 
+```{r}
+ district_assess_corr <- district_assess %>%
+  select(grad_rate_midpt, pct_pov:pct_CLI, read_score, math_score) %>%
+  na.omit()
+
+district_assess_corr[,1:ncol(district_assess_corr)] %>% 
+    cor() %>%
+    corrplot(method = "number")
+```
+
+
+### Race Data and Assessment Correlation
+
+
+Being white is somewhat positively correlated with assessments, reading scores with a stronger correlation. The other races are weaker correlations, but are generally negative accept for asian. 
+
+```{r}
+ district_assess_corr_race <- district_assess %>%
+  select(grad_rate_midpt, pct_hisp_latino:pct_PI, read_score, math_score) %>%
+  na.omit()
+
+district_assess_corr_race[,1:ncol(district_assess_corr_race)] %>% 
+    cor() %>%
+    corrplot(method = "number")
+```
+
+### HH Conditions and Assessment Correlation: Predominanlty White 
+
+
+For predominantly white districts, we can see that poverty is somewhat negatively correlated with reading and math scores. For predominantly white districts reading and math assessment scores are somewhat positively correlated wit graduation rates. 
+
+```{r}
+ district_assess_corr_white <- district_assess %>%
+  filter(predom_race == "White") %>%
+  select(grad_rate_midpt, pct_pov:pct_CLI, read_score, math_score) %>%
+  na.omit()
+
+district_assess_corr_white[,1:ncol(district_assess_corr_white)] %>% 
+    cor() %>%
+    corrplot(method = "number")
+```
+
+
+### HH Conditions and Assessment Correlation: Predominanlty Black 
+
+
+For predominantly Black districts, reading and math scores are significantly less correlated with graduation rates. Reading and math scores have stronger negative correlations with single parent households, poverty and households with no computer or internet. 
+
+
+```{r}
+ district_assess_corr_black <- district_assess %>%
+  filter(predom_race == "Black") %>%
+  select(grad_rate_midpt, pct_pov:pct_CLI, read_score, math_score) %>%
+  na.omit()
+
+district_assess_corr_black[,1:ncol(district_assess_corr_black)] %>% 
+    cor() %>%
+    corrplot(method = "number")
+```
+
+
+
+### HH Conditions and Assessment Correlation: Predominanlty Hispanic and Latino  
+
+
+For predominantly Hispanic and Latino school districts, we can see that reading and math assessment scores do not show significant correlations with household conditions. However, in contrast with other racial groups and the overall correlations math scores have a stronger positive correlation with graduation rates than reading scores for Hispanics/Latinos. 
+
+
+```{r}
+ district_assess_corr_HL <- district_assess %>%
+  filter(predom_race == "Hispanic/Latino") %>%
+  select(grad_rate_midpt, pct_pov:pct_CLI, read_score, math_score) %>%
+  na.omit()
+
+district_assess_corr_HL[,1:ncol(district_assess_corr_HL)] %>% 
+    cor() %>%
+    corrplot(method = "number")
+```
+
+
