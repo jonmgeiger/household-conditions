@@ -21,7 +21,8 @@ theme_set(theme_clean())
 data <- read_csv("../data/grad_raceP_household.csv") %>% 
     select(-student_total)
 data <- data %>%
-    select(dist, children, 
+    select(LEAID, 
+           dist, children, 
            grad_rate_midpt, 
            starts_with("pct"), 
            -pct_PI) %>% 
@@ -61,7 +62,7 @@ Because of the heavy right skew of the distribution of Native American proportio
 
 ```{r}
 data <- data %>%
-    select(11:15) %>%
+    select(12:16) %>%
     mutate(
         predom_race = names(.)[max.col(.)],
         predom_race = predom_race %>% 
