@@ -1,6 +1,6 @@
 library(tidyverse, warn.conflicts = F)
 library(readxl, warn.conflicts = F)
-library(tidycensus)
+library(tidycensus, warn.conflicts = F)
 
 
 to_moe <- function(moe) {
