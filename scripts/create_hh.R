@@ -48,7 +48,7 @@ noNY <- filter(district_regions, children <= 1000000)
 
 View(noNY)
 
-noNY <- write_csv("../data/hh.csv")
+noNY %>% write_csv("../data/hh.csv")
 
 
 
