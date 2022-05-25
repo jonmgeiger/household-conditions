@@ -23,7 +23,7 @@ source("names_list.R")
 names(district_data) <- names_list
 
 data("fips_codes")
-fips_codes %>%
+fips_data <- fips_codes %>%
     select(state_fips = state_code, state = state_name) %>%
     distinct() %>%
     right_join(district_data, 
@@ -34,5 +34,16 @@ fips_codes %>%
             ends_with("MOE"), 
             to_moe
         )
-    ) %>%
+    ) 
+
+state_region<- data.frame(state.name, state.region) %>%
+  rename(
+    state = state.name, 
+    region = state.region
+  )
+
+district_regions <- merge(x=fips_data, y=state_region, by="state", all.x=TRUE) %>%
     write_csv("../data/hh.csv")
+
+
+

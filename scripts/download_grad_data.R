@@ -43,5 +43,5 @@ grad_rates_summarized <- grad_rates %>%
 View(grad_rates_summarized)
 
 grad_rates_summarized %>% 
-    write_csv(file = "../data/clean_graduation_data.csv")
+    write_csv(file = "../data/grad.csv")
 
