@@ -78,8 +78,8 @@ nameslist<- c("geo_id",
                "pct_asian_moe", 
                "total_PI", #PI = Native Hawiian/PAcific Islander 
                "total_PI_moe", 
-               "pct_PT", 
-               "pct_PT_moe", 
+               "pct_PI", 
+               "pct_PI_moe", 
                "total_other", #total people of other race (nonhisp/latino)
                "total_other_moe", 
                "pct_other", 

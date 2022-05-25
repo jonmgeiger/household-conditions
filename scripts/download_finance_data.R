@@ -30,5 +30,5 @@ finance_per_child <- children %>%
          local_per_child = rev_local_avg/children) %>%
   select(leaid, fed_per_child, state_per_child, local_per_child)
 
-write_csv(finance_per_child, "finance.csv")
+write_csv(finance_per_child, "../data/finance.csv")
 

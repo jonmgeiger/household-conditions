@@ -1,6 +1,6 @@
 library(tidyverse, warn.conflicts = F)
 library(readxl, warn.conflicts = F)
-library(tidycensus)
+library(tidycensus, warn.conflicts = F)
 
 
 to_moe <- function(moe) {
@@ -23,7 +23,7 @@ source("names_list.R")
 names(district_data) <- names_list
 
 data("fips_codes")
-fips_codes %>%
+fips_data <- fips_codes %>%
     select(state_fips = state_code, state = state_name) %>%
     distinct() %>%
     right_join(district_data, 
@@ -34,5 +34,21 @@ fips_codes %>%
             ends_with("MOE"), 
             to_moe
         )
-    ) %>%
-    write_csv("../data/hh.csv")
+    ) 
+
+state_region<- data.frame(state.name, state.region) %>%
+  rename(
+    state = state.name, 
+    region = state.region
+  )
+
+district_regions <- merge(x=fips_data, y=state_region, by="state", all.x=TRUE)
+noNY <- filter(district_regions, children <= 1000000)
+  
+
+View(noNY)
+
+noNY <- write_csv("../data/hh.csv")
+
+
+
