@@ -42,8 +42,13 @@ state_region<- data.frame(state.name, state.region) %>%
     region = state.region
   )
 
-district_regions <- merge(x=fips_data, y=state_region, by="state", all.x=TRUE) %>%
-    write_csv("../data/hh.csv")
+district_regions <- merge(x=fips_data, y=state_region, by="state", all.x=TRUE)
+noNY <- filter(district_regions, children <= 1000000)
+  
+
+View(noNY)
+
+noNY <- write_csv("../data/hh.csv")
 
 
 
