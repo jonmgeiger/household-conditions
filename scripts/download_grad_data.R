@@ -42,6 +42,8 @@ grad_rates_summarized <- grad_rates %>%
   )
 View(grad_rates_summarized)
 
+grad_rates_summarized <- select(grad_rates_summarized, c('leaid', 'grad_rate_midpt'))
+
 grad_rates_summarized %>% 
     write_csv(file = "../data/grad.csv")
 
