@@ -266,7 +266,14 @@ best_results <-
     extract_workflow_set_result(best_wflow_id) %>%
     select_best(metric = "rmse")
 
+rf_results <- 
+    distr_tune %>%
+    extract_workflow_set_result("rf") %>%
+    select_best(metric = "rmse")
+
 best_results
+
+rf_results
 
 
 test_results <- 
@@ -275,7 +282,15 @@ test_results <-
     finalize_workflow(best_results) %>%
     last_fit(split = distr_split)
 
+rf_test_results <- 
+    distr_tune %>%
+    extract_workflow("rf") %>%
+    finalize_workflow(rf_results) %>%
+    last_fit(split = distr_split)
+
 collect_metrics(test_results)
+
+collect_metrics(rf_test_results)
 
 test_results %>%
     collect_predictions() %>%
@@ -285,5 +300,10 @@ test_results %>%
     coord_obs_pred() + 
     labs(x = "observed graduation rate", y = "predicted graduation rate", 
          title = paste0("Predicted vs. Observed Graduation Rate with ", best_wflow_id))
+
+library(vip)
+rf_test_results %>%
+    extract_fit_parsnip() %>%
+    vip(num_features = 20)
 
 ```
