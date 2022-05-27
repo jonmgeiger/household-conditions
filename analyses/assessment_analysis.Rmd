@@ -13,23 +13,10 @@ library(tidyverse)
 library(readr)
 library(corrplot)
 
-school_assess <- read_csv("../data/school_assess.csv")
+school_assess <- read_csv("../data/assess.csv")
 grad_raceP_household_rev <- read_csv("../data/grad_raceP_household_rev.csv")
 
 
-```
-
-## Average assessment scores 2014-2018 
-
-Lets calculate the average reading and math assessment scores for each district over 5 years. 
-
-```{r}
-school_assess <- school_assess %>%
-  filter(read_test_pct_prof_midpt > 0, 
-         math_test_pct_prof_midpt > 0) %>%
-  group_by(leaid)%>%
-  summarize(read_score = mean(read_test_pct_prof_midpt), 
-            math_score = mean(math_test_pct_prof_midpt))
 ```
 
 
@@ -101,12 +88,14 @@ district_assess %>%
 It appears that pct poverty is negatively correlated with both assessments but more so with reading scores. Additionally, we can see that graduation rates are positively correlated with reading and math scores. 
 ```{r}
  district_assess_corr <- district_assess %>%
-  select(grad_rate_midpt, pct_pov:pct_CLI, read_score, math_score) %>%
+  select(grad_rate_midpt, pct_pov:pct_CLI, read_score, math_score, total_score) %>%
   na.omit()
 
 district_assess_corr[,1:ncol(district_assess_corr)] %>% 
     cor() %>%
     corrplot(method = "number")
+
+
 ```
 
 
@@ -117,7 +106,7 @@ Being white is somewhat positively correlated with assessments, reading scores w
 
 ```{r}
  district_assess_corr_race <- district_assess %>%
-  select(grad_rate_midpt, pct_hisp_latino:pct_PI, read_score, math_score) %>%
+  select(grad_rate_midpt, pct_hisp_latino:pct_PI, read_score, math_score, total_score) %>%
   na.omit()
 
 district_assess_corr_race[,1:ncol(district_assess_corr_race)] %>% 
@@ -133,7 +122,7 @@ For predominantly white districts, we can see that poverty is somewhat negativel
 ```{r}
  district_assess_corr_white <- district_assess %>%
   filter(predom_race == "White") %>%
-  select(grad_rate_midpt, pct_pov:pct_CLI, read_score, math_score) %>%
+  select(grad_rate_midpt, pct_pov:pct_CLI, read_score, math_score, total_score) %>%
   na.omit()
 
 district_assess_corr_white[,1:ncol(district_assess_corr_white)] %>% 
@@ -151,7 +140,7 @@ For predominantly Black districts, reading and math scores are significantly les
 ```{r}
  district_assess_corr_black <- district_assess %>%
   filter(predom_race == "Black") %>%
-  select(grad_rate_midpt, pct_pov:pct_CLI, read_score, math_score) %>%
+  select(grad_rate_midpt, pct_pov:pct_CLI, read_score, math_score, total_score) %>%
   na.omit()
 
 district_assess_corr_black[,1:ncol(district_assess_corr_black)] %>% 
@@ -170,12 +159,14 @@ For predominantly Hispanic and Latino school districts, we can see that reading 
 ```{r}
  district_assess_corr_HL <- district_assess %>%
   filter(predom_race == "Hispanic/Latino") %>%
-  select(grad_rate_midpt, pct_pov:pct_CLI, read_score, math_score) %>%
+  select(grad_rate_midpt, pct_pov:pct_CLI, read_score, math_score, total_score) %>%
   na.omit()
 
 district_assess_corr_HL[,1:ncol(district_assess_corr_HL)] %>% 
     cor() %>%
     corrplot(method = "number")
 ```
+
+
 
 
