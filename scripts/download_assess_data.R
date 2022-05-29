@@ -12,8 +12,15 @@ school_assess <- get_education_data(
 )
 
 school_assess <- school_assess %>%
-  select(-leaid_num, -(race:econ_disadvantaged))
+  select(-leaid_num, -(race:econ_disadvantaged)) %>%
+  filter(read_test_pct_prof_midpt > 0, 
+         math_test_pct_prof_midpt > 0) %>%
+  group_by(leaid)%>%
+  summarize(read_score = mean(read_test_pct_prof_midpt), 
+            math_score = mean(math_test_pct_prof_midpt))
+school_assess <- school_assess %>%
+  mutate(total_score = read_score+math_score)
 
 school_assess %>% 
-  write_csv(file = "../data/school_assess.csv")
+  write_csv(file = "../data/assess.csv")
 
