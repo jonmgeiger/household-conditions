@@ -40,3 +40,6 @@ vignettes/*.pdf
 
 # API Keys
 .key.R
+
+# Models
+trained_models/
