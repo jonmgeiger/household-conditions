@@ -1,0 +1,75 @@
+---
+title: "Final Graduation Rate Modeling"
+author: "Jon Geiger, Noel Goodwin, Abigail Joppa"
+date: "`r Sys.Date()`"
+output: openintro::lab_report
+---
+
+```{r load-packages, message=F, warning=F}
+library(tidyverse, warn.conflicts = F)
+library(tidymodels, warn.conflicts = F)
+source("../scripts/prune_race_variables.R")
+cores <- parallel::detectCores()
+```
+
+# Data Import and Joining
+
+```{r import-data}
+hh <- read_csv("../data/hh.csv", show_col_types = FALSE) %>%
+    mutate(leaid = as.integer(leaid)) %>% 
+    filter(
+        if_any(ends_with("MOE"), 
+               function(x) {x < 0.5}), 
+        children >= 100
+    ) %>%
+    select(-ends_with("MOE"))
+
+grad <- read_csv("../data/grad.csv", show_col_types = FALSE) %>%
+    mutate(leaid = as.integer(leaid))
+
+race <- read_csv("../data/race.csv", show_col_types = FALSE) %>% 
+    prune_and_predom() %>%
+    mutate(leaid = as.integer(leaid), 
+           predom_race = as.character(predom_race))
+
+assess <- read_csv("../data/assess.csv", show_col_types = FALSE) %>%
+    mutate(leaid = as.integer(leaid))
+
+finance <- read_csv("../data/finance.csv", show_col_types = FALSE) %>%
+    mutate(leaid = as.integer(leaid))
+
+data <- hh %>%
+    left_join(grad,    by = c("leaid" = "leaid")) %>%
+    left_join(race,    by = c("leaid" = "leaid")) %>%
+    left_join(assess,  by = c("leaid" = "leaid")) %>%
+    left_join(finance, by = c("leaid" = "leaid")) %>%
+    select(
+        -state, -leaid
+    ) %>%
+    rename_with(~ str_remove_all(.x, ".x"), ends_with(".x")) %>%
+    relocate(where(is.character), .after = dist)
+
+rm(hh, grad, race, assess, finance)
+
+nrow(data)
+
+data <- data %>%
+    na.omit()
+
+nrow(data)
+```
+
+```{r}
+data %>% skimr::skim()
+```
+
+# Introduction
+
+So far with this data set, we have constructed several models, including linear models, regularized linear models, splines, trees, KNNs, and ensemble models such as random forests and gradient boosted trees. We've observed from our prior analyses that with these models, we can achieve $R^2$ values between 0.35 and 0.45. The purpose of this analysis is twofold: first, to dive into some of the more fine details of the random forest and XGBoost models we constructed in our prior analysis, and second, to compare the model accuracy when using dummy variables for a certain categorical variable, versus conducting separate analyses for all values of a given categorical variable. In particular, we would like to see if our Region variables (which takes the values "South", "West", "Northeast", and "North Central") has a better effect on our model if we split it into four dummy variables or if we perform four separate analyses, one for each region.  
+
+Our first step, however, comes from the end of our previous analysis. We noted when looking at the variable importance plot for our Random Forest model, that we had some unexpected candidates for the most important variables in the construction of that model. We will first take a look at these relationships, with the potential of informing our construction of interaction variables during the preprocessing stage of modeling. 
+
+Next, once we have done a more exploratory analysis on the most important variables from the previous analysis, we will dive into constructing four different models for the four different regions, as well as one aggregate model for all the regions, in order to compare the $R^2$ values for each of the models. We might preliminarily expect that, if there is some natural clustering within regions of the U.S., then splitting up the regions into separate analyses might provide some benefit. However, we would like to compare this against simply constructing a dummy variable for the region to see if it actually does improve the modeling accuracy at all. 
+
+# Exploring Relationships
+
