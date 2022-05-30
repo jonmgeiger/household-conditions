@@ -250,7 +250,32 @@ trans %>%
                rows = vars(type), scales = "free")
 ```
 
-For all of our percentage predictors other than `pct_white`, a log-transformation appeared to make the distributions more symmetric. We will take this into account during the feature engineering stage of creating our final model. Let's now take a look at our other, non-percentage variables. 
+For all of our percentage predictors other than `pct_white`, a log-transformation appeared to make the distributions more symmetric. Let's try a different transformation for `pct_white`, such as an exponential transformation. Since this is the inverse of the log transformation, we might expect it to deal better with left-skewed data. 
+
+```{r}
+data %>%
+    select("untransformed" = pct_white) %>%
+    mutate(
+        "quadratic" = untransformed^2, 
+        "arcsin" = asin(untransformed/100), 
+        "neg_exponential" = exp(untransformed)
+    ) %>%
+    pivot_longer(everything(), 
+                 names_to = "transformation_type", 
+                 values_to = "value") %>%
+    mutate(transformation_type = factor(transformation_type, 
+                                          levels = c(
+                                              "untransformed", 
+                                              "quadratic", 
+                                              "arcsin", 
+                                              "neg_exponential"
+                                          ))) %>%
+    ggplot(aes(x = value)) + 
+    geom_histogram() + 
+    facet_wrap(~ transformation_type, scales = "free")
+```
+
+It appears as though the arcsine transformation of the Percent White variable yields the most symmetric results. We will take this into account during the feature engineering stage of creating our final model. Let's now take a look at our other, non-percentage variables.
 
 ```{r}
 trans %>%
