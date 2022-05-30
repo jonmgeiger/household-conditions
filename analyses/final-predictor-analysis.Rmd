@@ -225,6 +225,8 @@ We can see that for many of these variables which are heavily right-skewed, perf
 
 Let's take a look at the distribution of every predictor to see which ones might benefit from a log transformation. Let's plot a histogram of every predictor along with its log transformation in order to see which ones benefit. 
 
+## Percentage Distributions
+
 ```{r, fig.height=20}
 trans <- data %>%
     select(-grad_rate_midpt) %>%
@@ -250,7 +252,11 @@ trans %>%
                rows = vars(type), scales = "free")
 ```
 
-For all of our percentage predictors other than `pct_white`, a log-transformation appeared to make the distributions more symmetric. Let's try a different transformation for `pct_white`, such as an exponential transformation. Since this is the inverse of the log transformation, we might expect it to deal better with left-skewed data. 
+For all of our percentage predictors other than `pct_white`, a log-transformation appeared to make the distributions more symmetric. 
+
+## `pct_white`
+
+Let's try a different transformation for `pct_white`, such as an exponential transformation. Let's try quadratic, arcsine, and exponential transformations to see how symmetric we can get our `pct_white` variable to be. 
 
 ```{r}
 data %>%
@@ -258,7 +264,7 @@ data %>%
     mutate(
         "quadratic" = untransformed^2, 
         "arcsin" = asin(untransformed/100), 
-        "neg_exponential" = exp(untransformed)
+        "exponential" = exp(untransformed)
     ) %>%
     pivot_longer(everything(), 
                  names_to = "transformation_type", 
@@ -268,14 +274,19 @@ data %>%
                                               "untransformed", 
                                               "quadratic", 
                                               "arcsin", 
-                                              "neg_exponential"
+                                              "exponential"
                                           ))) %>%
     ggplot(aes(x = value)) + 
     geom_histogram() + 
     facet_wrap(~ transformation_type, scales = "free")
 ```
 
-It appears as though the arcsine transformation of the Percent White variable yields the most symmetric results. We will take this into account during the feature engineering stage of creating our final model. Let's now take a look at our other, non-percentage variables.
+It appears as though the arcsine transformation of the Percent White variable yields the most symmetric results. We will take this into account during the feature engineering stage of creating our final model. 
+
+
+## Children, Assessments, and Funding
+
+Let's now take a look at our other, non-percentage variables.
 
 ```{r}
 trans %>%
