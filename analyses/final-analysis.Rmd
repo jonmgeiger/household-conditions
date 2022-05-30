@@ -255,5 +255,68 @@ main_tune <-
                 control = main_grid_ctrl, 
                 verbose = TRUE)
 
-saveRDS(distr_tune, paste0("trained_models/", Sys.Date(), "_main_tune.rds"))
+saveRDS(main_tune, paste0("trained_models/", Sys.Date(), "_main_tune.rds"))
+```
+```
+i 1 of 7 resampling: main_lm
+✔ 1 of 7 resampling: main_lm (5.4s)
+i 2 of 7 tuning:     main_lasso
+✔ 2 of 7 tuning:     main_lasso (5.5s)
+i 3 of 7 tuning:     main_mars
+✔ 3 of 7 tuning:     main_mars (32.4s)
+i 4 of 7 tuning:     main_svm
+✔ 4 of 7 tuning:     main_svm (2h 36m 14.1s)
+i 5 of 7 tuning:     main_dtree
+✔ 5 of 7 tuning:     main_dtree (3m 34.5s)
+i 6 of 7 tuning:     main_rf
+✔ 6 of 7 tuning:     main_rf (2h 55m 32.9s)
+i 7 of 7 tuning:     main_xgboost
+✔ 7 of 7 tuning:     main_xgboost (36m 4.2s)
+```
+
+```{r model-load}
+main_tune <- readRDS("trained_models/2022-05-30_main_tune.rds")
+```
+
+```{r model-evaluation}
+autoplot(main_tune, select_best = TRUE)
+
+(ranks <- main_tune %>%
+    rank_results(select_best = TRUE) %>%
+    select(-std_err) %>%
+    pivot_wider(names_from = .metric, values_from = mean) %>%
+    select(wflow_id, rank, rmse, rsq))
+
+(best_wflow_id <- ranks %>% 
+    head(1) %>% pull(wflow_id))
+
+best_results <- 
+    main_tune %>%
+    extract_workflow_set_result(best_wflow_id) %>%
+    select_best(metric = "rmse")
+
+best_results
+
+test_results <- 
+    main_tune %>%
+    extract_workflow(best_wflow_id) %>%
+    finalize_workflow(best_results) %>%
+    last_fit(split = main_split)
+
+collect_metrics(test_results)
+
+test_results %>%
+    collect_predictions() %>%
+    ggplot(aes(x = grad_rate_midpt, y = .pred)) + 
+    geom_abline(color = "gray50", lty = 2) + 
+    geom_point(alpha = 0.5) + 
+    coord_obs_pred() + 
+    labs(x = "observed graduation rate", y = "predicted graduation rate", 
+         title = paste0("Predicted vs. Observed Graduation Rate with ", best_wflow_id))
+
+library(vip)
+test_results %>%
+    extract_fit_parsnip() %>%
+    vip(num_features = 20)
+
 ```
