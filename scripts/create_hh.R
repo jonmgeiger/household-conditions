@@ -36,6 +36,8 @@ fips_data <- fips_codes %>%
         )
     ) 
 
+
+
 state_region<- data.frame(state.name, state.region) %>%
   rename(
     state = state.name, 
@@ -43,7 +45,12 @@ state_region<- data.frame(state.name, state.region) %>%
   )
 
 district_regions <- merge(x=fips_data, y=state_region, by="state", all.x=TRUE)
-noNY <- filter(district_regions, children <= 1000000)
+
+
+noNY <- district_regions %>%
+  filter(children <= 1000000)%>%
+  mutate(leaid = as.numeric(leaid))
+  
   
 
 View(noNY)
