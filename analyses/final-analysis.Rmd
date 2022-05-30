@@ -1,0 +1,259 @@
+---
+title: "Final Model Analysis"
+author: "Jon Geiger, Noel Goodwin, Abigail Joppa"
+date: "`r Sys.Date()`"
+output: openintro::lab_report
+---
+
+```{r load-packages, message=F, warning=F}
+library(tidyverse, warn.conflicts = F)
+library(tidymodels, warn.conflicts = F)
+cores <- parallel::detectCores()
+```
+
+# Introduction
+
+Now that we have completed an exploratory analysis on all of our predictors in order to make their distributions more symmetric, we are ready to start the modeling process. We will be tactfully transforming variables according to the previous analysis, including log transformations, arcsine transformations, and leaving some variables as they are. 
+
+The goal of this analysis is **to test whether or not the construction of four separate models, one for each region, provides an improvement in model accuracy over using dummy variables for the four geographic regions of the U.S.** 
+
+## Implementation Plan
+
+The steps taken in this analysis will be: 
+
+1. Data Import and Joining
+    - This involves reading in all of our data. Special care will be taken with the original household conditions dataset (stored in `hh.csv`). We will be subsetting as follows: 
+        * Filter out any school districts for which *any household condition* has a margin of error ranging from 0%-100%. 
+        * Filter out school districts with fewer than 100 students. 
+    - We join the data by the LEAID, a unique identifier for a given school district. 
+    - We omit any rows that have `NA` values, as this can mess with the modeling process later on. Many of the `NA` values come from missing graduation rate data, and hence cannot be useful in the predictive modeling process. 
+
+2. Data Splitting and Folding
+    - For the main model, the whole data set will be initially split (80/20) into a training and test set, stratified by region. 
+    - For the individual models, four different datasets will be created for each of the four regions and each one will utilize an 80/20 train-test split as well. 
+    - For each data set created (five in total: one main, and four regional), ten cross-validation folds will be specified. (perhaps nested dataframes could be helpful? `tidyr::nest()` https://tidyr.tidyverse.org/articles/nest.html)
+    
+3. Data Preprocessing
+    - This involves creating two `recipe`s by which our data can be transformed for modeling (one for the main data and the other for the regional data). 
+    - The following variables will not be transformed: 
+        * `math_score`, `read_score`
+    - The following variables will be log-transformed ($\ln(1+X)$): 
+        * All household conditions
+        * `children`
+        * All ethnic percentages except for `pct_white`
+    - The following variables will be arcsine-transformed($\arcsin(X/100)$)
+        * `pct_white`
+    - Remove predictors with near-zero variance
+    - Create multiplicative interaction terms
+    - Center and scale predictors
+    - Dummy variables for `predom_race`
+    - (only in main model) Dummy variables for `region`
+    - Remove predictors with near-zero variance (again, with new interaction terms)
+
+4. Model Specification
+    - The following models will be specified for regression: 
+        * Linear Regression (`lm`)
+        * Lasso Regression (`glmnet`)
+        * Multivariate Adaptive Regression Spline (`earth`)
+        * Support Vector Regression (`kernlab`)
+        * Decision Tree (`rpart`)
+        * Random Forest (`ranger`)
+        * Gradient Boosted Trees (`xgboost`)
+    - All hyperparameters will be set to automatically tune using the cross-validation folds and a grid-search of size 30. 
+
+5. Model Training
+    - Models will be trained with the given specifications on parallel (using `r cores` cores). 
+    - RDS files will be saved of these models to reference later, since training will take a long time.
+
+6. Model Evaluation
+    - This will be twofold: 
+        * First, the main model will be compared with the previous model to see if there is a significant increase in the adjusted $R^2$ value. We will also look at variable importance to see if there are any significant variables which we didn't see in our previous analysis. The changes made to the model since the last analysis include: 
+            * Filtering out districts with $<100$ students
+            * Including Assessment Data
+            * Transforming variables for symmetry
+            * Not scaling the dummy variables in preprocessing
+        * Second, we will be comparing the metrics of the main model against the metrics of the four individual regional models to test whether the creation of dummy variables is a good enough replacement for creating four separate models, or whether we can actually get a reasonable increase in the $R^2$ metric by constructing four separate models. 
+
+# Analysis
+
+## Data Import and Joining
+
+```{r import-data}
+hh <- read_csv("../data/hh.csv", show_col_types = FALSE) %>%
+    mutate(leaid = as.integer(leaid)) %>% 
+    filter(
+        if_any(ends_with("MOE"), 
+               function(x) {x < 50}), 
+        children >= 100
+    ) %>%
+    select(-ends_with("MOE"))
+
+grad <- read_csv("../data/grad.csv", show_col_types = FALSE) %>%
+    mutate(leaid = as.integer(leaid))
+
+source("../scripts/prune_race_variables.R")
+race <- read_csv("../data/race.csv", show_col_types = FALSE) %>% 
+    prune_and_predom() %>%
+    mutate(leaid = as.integer(leaid), 
+           predom_race = as.character(predom_race))
+
+assess <- read_csv("../data/assess.csv", show_col_types = FALSE) %>%
+    mutate(leaid = as.integer(leaid)) %>%
+    select(-total_score)    # Remove because of linear dependence
+
+finance <- read_csv("../data/finance.csv", show_col_types = FALSE) %>%
+    mutate(leaid = as.integer(leaid))
+
+data <- hh %>%
+    left_join(grad,    by = c("leaid" = "leaid")) %>%
+    left_join(race,    by = c("leaid" = "leaid")) %>%
+    left_join(assess,  by = c("leaid" = "leaid")) %>%
+    left_join(finance, by = c("leaid" = "leaid")) %>%
+    select(
+        -state, -leaid
+    ) %>%
+    relocate(region, predom_race, .after = dist)
+
+rm(hh, grad, race, assess, finance, prune_and_predom)
+
+nrow(data)
+
+data <- data %>%
+    na.omit()
+
+nrow(data)
+```
+
+## Data Splitting and Folding
+
+```{r split-and-fold}
+set.seed(2345)
+main_split <- initial_split(data, strata = region, prop = 0.8)
+main_train <- training(main_split)
+main_test  <- testing(main_split)
+set.seed(5432)
+main_folds <- vfold_cv(main_train, strata = region)
+```
+
+## Preprocessing
+
+```{r recipe}
+main_recipe <- 
+    recipe(grad_rate_midpt ~ ., data = main_train) %>%
+    update_role(dist, new_role = "ID") %>%
+    step_log(c(children:pct_hisp_latino, pct_black:pct_PI), base = 10, offset = 1) %>%
+    step_mutate(arcsin_pct_white = asin(pct_white/100)) %>%
+    step_rm(pct_white) %>%
+    step_nzv(all_numeric_predictors()) %>%
+    step_interact(~ all_numeric_predictors():all_numeric_predictors()) %>%
+    step_scale(all_numeric_predictors()) %>%
+    step_center(all_numeric_predictors()) %>%
+    step_dummy(all_nominal_predictors()) %>%
+    step_nzv(all_numeric_predictors())
+main_recipe %>%
+    prep() %>%
+    bake(new_data = NULL) %>%
+    select(-dist) %>%
+    head(5)
+```
+
+## Model Specifications
+
+```{r create-specs}
+lm_spec <-
+    linear_reg() %>%
+    set_engine('lm')
+
+lasso_spec <-
+    linear_reg(
+        mixture = 1, 
+        penalty = tune()
+    ) %>%
+    set_engine('glmnet')
+
+mars_spec <-
+    mars(
+        prod_degree = tune()
+    ) %>%
+    set_engine('earth') %>%
+    set_mode('regression')
+
+svm_spec <-
+    svm_linear(
+        cost = tune(), 
+        margin = tune()
+    ) %>%
+    set_engine('kernlab') %>%
+    set_mode('regression')
+
+dtree_spec <-
+    decision_tree(
+        tree_depth = tune(), 
+        min_n = tune(), 
+        cost_complexity = tune()
+    ) %>%
+    set_engine('rpart') %>%
+    set_mode('regression')
+
+rf_spec <-
+    rand_forest(
+        trees = 1000,
+        mtry = tune(),
+        min_n = tune()
+    ) %>%
+    set_engine('ranger', num.threads = cores, 
+               importance = "impurity") %>%
+    set_mode('regression')
+
+xgb_spec <- 
+    boost_tree(
+        trees = 1000, 
+        tree_depth = tune(),
+        min_n = tune(),
+        mtry = tune(),
+        sample_size = tune(),
+        learn_rate = tune()
+    ) %>%
+    set_engine("xgboost") %>%
+    set_mode("regression")
+```
+
+```{r main-workflowset}
+main_workflowset <- 
+    workflow_set(
+        preproc = list("main" = main_recipe), 
+        models = list(
+            "lm" = lm_spec, 
+            "lasso" = lasso_spec, 
+            "mars" = mars_spec, 
+            "svm" = svm_spec, 
+            "dtree" = dtree_spec, 
+            "rf" = rf_spec, 
+            "xgboost" = xgb_spec
+        )
+    )
+main_workflowset
+
+```
+
+## Model Training
+
+```{r main-train, eval = F}
+main_grid_ctrl <- 
+    control_grid(
+        save_pred = TRUE, 
+        parallel_over = "everything", 
+        save_workflow = TRUE
+    )
+
+doParallel::registerDoParallel(cores = cores)
+main_tune <- 
+    main_workflowset %>%
+    workflow_map("tune_grid", seed = 2314, 
+                resamples = main_folds, 
+                grid = 30, 
+                control = main_grid_ctrl, 
+                verbose = TRUE)
+
+saveRDS(distr_tune, paste0("trained_models/", Sys.Date(), "_main_tune.rds"))
+```
