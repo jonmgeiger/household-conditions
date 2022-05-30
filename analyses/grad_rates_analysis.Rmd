@@ -9,12 +9,21 @@ output: openintro::lab_report
 library(tidyverse)
 library(openintro)
 library(corrplot)
+source("../scripts/prune_race_variables.R")
 ```
 
 ### Load data and packages
 
 ```{r, message=FALSE}
-grad_race_HH <- read_csv("../data/grad_raceP_household.csv")
+grad_race_HH <- read_csv("../data/hh.csv") %>%
+    mutate(leaid = as.integer(leaid)) %>%
+    left_join(read_csv("../data/race.csv") %>%
+                  mutate(leaid = as.integer(leaid)) %>%
+                  prune_and_predom(), 
+              by = c("leaid" = "leaid")) %>%
+    left_join(read_csv("../data/grad.csv") %>%
+                  mutate(leaid = as.integer(leaid)), 
+              by = c("leaid" = "leaid"))
 ```
 
 ### Summary Statistics
@@ -194,6 +203,7 @@ best_states[,2:ncol(best_states)] %>%
 ggplot(grad_race_HH, 
        aes(x = pct_native, y = grad_rate_midpt)) + 
     geom_point(alpha = 0.1) + 
-    geom_smooth(method = "lm", se = T)
+    geom_smooth(method = "lm", se = T) + 
+    scale_x_log10()
 ```
 
