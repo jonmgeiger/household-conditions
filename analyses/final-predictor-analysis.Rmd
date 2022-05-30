@@ -1,0 +1,282 @@
+---
+title: "Variable Interactions Analysis"
+author: "Jon Geiger, Noel Goodwin, Abigail Joppa"
+date: "`r Sys.Date()`"
+output: openintro::lab_report
+---
+
+```{r load-packages, message=F, warning=F}
+library(tidyverse, warn.conflicts = F)
+library(tidymodels, warn.conflicts = F)
+source("../scripts/prune_race_variables.R")
+```
+
+# Data Import and Joining
+
+```{r import-data}
+hh <- read_csv("../data/hh.csv", show_col_types = FALSE) %>%
+    mutate(leaid = as.integer(leaid)) %>% 
+    filter(
+        if_any(ends_with("MOE"), 
+               function(x) {x < 50}), 
+        children >= 100
+    ) %>%
+    select(-ends_with("MOE"))
+
+grad <- read_csv("../data/grad.csv", show_col_types = FALSE) %>%
+    mutate(leaid = as.integer(leaid))
+
+race <- read_csv("../data/race.csv", show_col_types = FALSE) %>% 
+    prune_and_predom() %>%
+    mutate(leaid = as.integer(leaid), 
+           predom_race = as.character(predom_race))
+
+assess <- read_csv("../data/assess.csv", show_col_types = FALSE) %>%
+    mutate(leaid = as.integer(leaid))
+
+finance <- read_csv("../data/finance.csv", show_col_types = FALSE) %>%
+    mutate(leaid = as.integer(leaid))
+
+data <- hh %>%
+    left_join(grad,    by = c("leaid" = "leaid")) %>%
+    left_join(race,    by = c("leaid" = "leaid")) %>%
+    left_join(assess,  by = c("leaid" = "leaid")) %>%
+    left_join(finance, by = c("leaid" = "leaid")) %>%
+    select(
+        -state, -leaid
+    ) %>%
+    relocate(region, predom_race, .after = dist)
+
+rm(hh, grad, race, assess, finance)
+
+nrow(data)
+
+data <- data %>%
+    na.omit()
+
+nrow(data)
+```
+
+```{r}
+data %>% skimr::skim()
+```
+
+# Introduction
+
+So far with this data set, we have constructed several models, including linear models, regularized linear models, splines, trees, KNNs, and ensemble models such as random forests and gradient boosted trees. We've observed from our prior analyses that with these models, we can achieve $R^2$ values between 0.35 and 0.45. The purpose of this analysis is twofold: first, to dive into some of the more fine details of the random forest and XGBoost models we constructed in our prior analysis, and second, to compare the model accuracy when using dummy variables for a certain categorical variable, versus conducting separate analyses for all values of a given categorical variable. In particular, we would like to see if our Region variables (which takes the values "South", "West", "Northeast", and "North Central") has a better effect on our model if we split it into four dummy variables or if we perform four separate analyses, one for each region.  
+
+Our first step, however, comes from the end of our previous analysis. We noted when looking at the variable importance plot for our Random Forest model, that we had some unexpected candidates for the most important variables in the construction of that model. We will first take a look at these relationships, with the potential of informing our construction of interaction variables during the preprocessing stage of modeling. 
+
+Next, once we have done a more exploratory analysis on the most important variables from the previous analysis, we will dive into constructing four different models for the four different regions, as well as one aggregate model for all the regions, in order to compare the $R^2$ values for each of the models. We might preliminarily expect that, if there is some natural clustering within regions of the U.S., then splitting up the regions into separate analyses might provide some benefit. However, we would like to compare this against simply constructing a dummy variable for the region to see if it actually does improve the modeling accuracy at all. 
+
+# Exploring Relationships
+
+There were a few distinct terms which stuck out in the variable importance plot from the previous analysis: 
+- `pct_pov_x_fed_per_child`
+- `pct_SP_x_pct_HHVJ`
+- `pct_pov`
+- `pct_CC_x_pct_native`
+- `children`
+- `children_x_pct_native`
+
+Let's explore the relationships between these variables and graduation rate. 
+
+```{r}
+data %>%
+    mutate(pct_pov_x_fed_per_child = pct_pov * fed_per_child, 
+           pct_SP_x_pct_HHVJ = pct_SP * pct_HHVJ,
+           pct_CC_x_pct_native = pct_CC * pct_native, 
+           children_x_pct_native = children * pct_native) %>%
+    select(grad_rate_midpt, children, pct_pov, 
+           pct_pov_x_fed_per_child, 
+           pct_SP_x_pct_HHVJ, 
+           pct_CC_x_pct_native, 
+           children_x_pct_native) %>%
+    pivot_longer(cols = children:children_x_pct_native, 
+                 names_to = "value_type", 
+                 values_to = "value") %>%
+    ggplot(aes(y = grad_rate_midpt, x = value)) +
+    geom_point(alpha = 0.05) + 
+    geom_smooth() +
+    facet_wrap(~ value_type, scales = "free")
+```
+
+It's pretty obvious to see that many of these distributions are very right-skewed. Let's see what we can do to transform these data to make them more symmetric: 
+
+## Children
+```{r}
+data %>% 
+    select(grad_rate_midpt, children) %>%
+    mutate(log_children = log(children)) %>%
+    pivot_longer(children:log_children, 
+                 names_to = "type", 
+                 values_to = "value") %>%
+ggplot(aes(x = value, y = grad_rate_midpt)) + 
+    geom_point(alpha = 0.1) + 
+    geom_smooth() + 
+    facet_wrap(~ type, scales = "free")
+```
+
+It immediately appears as though the log-transformation on children makes the distribution more symmetric, thus it would make sense to log-transform the children variable for modeling purposes. 
+
+We can also notice, however, that there is a strange line which appears around the 75% mark of graduation rates; let's explore this a little bit further: 
+
+```{r}
+ggplot(data, aes(x = grad_rate_midpt)) + 
+    geom_histogram() + 
+    lims(x = c(70, 80))
+```
+
+```{r, fig.height = 20}
+data %>%
+    filter(grad_rate_midpt == 75) %>%
+    pivot_longer(pct_pov:last_col(), 
+                 names_to = "type", 
+                 values_to = "value") %>%
+    ggplot(aes(x = children, y = value)) + 
+    geom_point() + 
+    facet_grid(rows = vars(type), 
+               #cols = vars(region), 
+               scales = "free")
+```
+
+For the school districts which have exactly a 75% graduation rate, there don't appear to be any really distinct patterns in the data, other than the fact that all but one of these school districts has fewer than 1000 children in it. 
+
+
+## Children * Percent Native
+
+```{r}
+data %>% 
+    select(predom_race, grad_rate_midpt, children, pct_native) %>%
+    ggplot(aes(x = log(children), y = log(1 + pct_native))) + 
+    geom_point(alpha = 0.3)
+```
+
+We can see that a log transform helps us out a lot here due to the right-skewed nature of both of these predictors. Because `pct_native` has a lot of zero values, we compute $\log(1+\texttt{pct_native})$ to avoid losing a ton of data. 
+
+## Percent Poverty * Fed per Child
+
+```{r}
+ggplot(data, aes(x = pct_pov, y = fed_per_child)) + 
+    geom_point()
+cor(data$fed_per_child, data$pct_pov)
+```
+
+We can notice that there is, in fact, a very distinct correlation between these two variables. Due to, once again, the right-skewed nature of the federal funding per child, let's log-transform this to see how that affects things. 
+
+```{r}
+data %>% 
+    select(fed_per_child, pct_pov) %>%
+    mutate(log_fed_per_child = log(fed_per_child), .after = fed_per_child) %>%
+    mutate(log_pct_pov = log(1 + pct_pov), .after = pct_pov) %>%
+    cor() %>%
+    as.data.frame() %>%
+    select(3:4) %>%
+    filter(row_number() < 3)
+ggplot(data, aes(x = log(100*pct_pov), y = log(fed_per_child))) + 
+    geom_point()
+```
+
+While this isn't super interesting, it's good to note that as the poverty rate of a school district increases, the amount of federal funding per child increases. Additionally, by log-transforming the predictors, we increase the correlation between them significantly. 
+
+## Percent Single Parent * Percent HH in Vulnerable Job
+
+```{r}
+ggplot(data, aes(x = pct_SP, y = pct_HHVJ)) + 
+    geom_point(alpha = 0.2)
+cor(data$pct_SP, data$pct_HHVJ)
+```
+
+There doesn't appear to be any distinct skew of these variables---let's see if log-transforming them has any impact on their correlation.
+
+```{r}
+data %>% 
+    select(pct_SP, pct_HHVJ) %>%
+    mutate(log_pct_SP = log(1+100*pct_SP), .after = pct_SP) %>%
+    mutate(log_pct_HHVJ = log(1 + 100*pct_HHVJ), .after = pct_HHVJ) %>%
+    cor() %>%
+    as.data.frame() %>%
+    select(3:4) %>%
+    filter(row_number() < 3)
+ggplot(data, aes(x = log(100*pct_HHVJ), y = log(100*pct_SP))) + 
+    geom_point()
+```
+
+It doesn't appear that a log-transformation has an impact on their correlation, so we can leave these two untransformed before creating the interaction variables. 
+
+## Percent Poverty
+
+```{r}
+ggplot(data, aes(x = pct_pov, y = grad_rate_midpt)) + 
+    geom_point(alpha = 0.1)
+```
+
+## Percent Crowded Conditions * Percent Native
+
+```{r}
+ggplot(data, aes(x = log(1 + pct_CC), y = log(1 + pct_native))) + 
+    geom_point(aes(color = predom_race), alpha = 0.1) + 
+    geom_smooth(aes(color = predom_race))
+```
+
+# All Predictor Distributions
+
+We can see that for many of these variables which are heavily right-skewed, performing a $\ln(1 + X)$ transformation can be beneficial.  
+
+Let's take a look at the distribution of every predictor to see which ones might benefit from a log transformation. Let's plot a histogram of every predictor along with its log transformation in order to see which ones benefit. 
+
+```{r, fig.height=20}
+trans <- data %>%
+    select(-grad_rate_midpt) %>%
+    pivot_longer(children:last_col(), 
+                 names_to = "type", 
+                 values_to = "untransformed") %>%
+    mutate(
+        transformed = log10(1 + untransformed)
+    ) %>%
+    pivot_longer(c(untransformed, transformed), 
+                 names_to = "transformation_status", 
+                 values_to = "value") %>%
+    mutate(transformation_status = factor(transformation_status, 
+                                          levels = c(
+                                              "untransformed", 
+                                              "transformed"
+                                          )))
+trans %>%
+    filter(type %>% str_detect('pct')) %>%
+    ggplot(aes(x = value)) + 
+    geom_histogram() + 
+    facet_grid(cols = vars(transformation_status), 
+               rows = vars(type), scales = "free")
+```
+
+For all of our percentage predictors other than `pct_white`, a log-transformation appeared to make the distributions more symmetric. We will take this into account during the feature engineering stage of creating our final model. Let's now take a look at our other, non-percentage variables. 
+
+```{r}
+trans %>%
+    filter(type == "children") %>%
+    ggplot(aes(x = value)) + 
+    geom_histogram() + 
+    facet_grid(cols = vars(transformation_status), 
+               rows = vars(type), scales = "free")
+
+trans %>%
+    filter(type %>% str_detect("score")) %>%
+    ggplot(aes(x = value)) + 
+    geom_histogram() + 
+    facet_grid(cols = vars(transformation_status), 
+               rows = vars(type), scales = "free")
+
+trans %>%
+    filter(type %>% str_detect("per_child")) %>%
+    ggplot(aes(x = value)) + 
+    geom_histogram() + 
+    facet_grid(cols = vars(transformation_status), 
+               rows = vars(type), scales = "free")
+```
+
+Log-transforming children makes sense, as it gets much more symmetric upon log transformation. 
+
+Assessment scores are already mostly symmetric, and log transformations tend to skew them to the left, so we will leave these un-transformed. 
+
+Funding (federal, local, and state) per child benefits heavily from log transformations, so we will log-transform these in the preprocessing stage. 
