@@ -18,7 +18,7 @@ to_moe <- function(moe) {
         return()
 }   
 
-district_data <- read_xlsx("../data/NHGIS_District_data.xlsx")
+district_data <- read_xlsx("../raw/NHGIS_District_data.xlsx")
 source("names_list.R")
 names(district_data) <- names_list
 
