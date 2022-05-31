@@ -33,25 +33,38 @@ See [create_hh.R](https://github.com/jonmgeiger/household-conditions/blob/main/s
 | `region` | South, West, North Central, Northeast |
 
 ### Graduation rates (grad.csv)
-- Sourced from an [Urban Institute R package](https://github.com/UrbanInstitute/education-data-package-r) which includes graduation rates by cohort
+- Sourced from an [Urban Institute R package](https://github.com/UrbanInstitute/education-data-package-r) API which includes graduation rates by cohort
 - See [script](https://github.com/jonmgeiger/household-conditions/blob/main/scripts/download_grad_data.R) for reference on how we transformed the data to include graduation rates by district rather than cohort. 
 
 | Variables | Description |
 | --- | --- |
-| `leaid` | State fips code + district ID (7 digits)|
+| `leaid` | Local education agency identification number|
 | `grad_rate_midpt` | Average graduation rate |
 
 ### Race Data:
 - Sourced from the [American Community Survey (ACS)](https://nces.ed.gov/programs/edge/Demographic/ACS) which incudes demographic estimates of each school district in the US averaged over 2014-2018. 
-- 
+- See [create_race.R](https://github.com/jonmgeiger/household-conditions/blob/reproducibility/scripts/create_race.R) for data retreival information
 
-## Joined Datasets: 
-The joined datasets are titled according to which datasets are included in the join. For example, the race_household.csv includes both the race data and household data. 
+### Assessment Data ([assess.csv](https://github.com/jonmgeiger/household-conditions/blob/main/data/assess.csv))
+- Accessed through the [Urban Institute R package](https://github.com/UrbanInstitute/education-data-package-r) API
+- Sourced from edfacts
+- See [download_assess_data_R](https://github.com/jonmgeiger/household-conditions/blob/main/scripts/download_assess_data.R) for data retreival information
 
-#### Key: 
-- **grad** = Graduation Rates  
-- **race** =  Race Data   
-- **raceP** = Race Data, pruned (extraneous variables removed)
-  - **predom** = includes predominant race column
-- **household/HH** = Household Conditions data   
-- **school** = Public School data  
+| Variables | Description |
+| --- | --- |
+| `leaid` | Local education agency identification number|
+| `read_score` | 5-year average reading assessment score (2014-2018)|
+| `math_score` | 5-year average math assessment score (2014-2018)|
+| `total_score` | 5-year average total (reading+math) assessment score (2014-2018)|
+
+### District Financial Data
+- Accessed through the [Urban Institute R package](https://github.com/UrbanInstitute/education-data-package-r) API
+- Sourced form the Common Core of Data (CCD)
+- See [download_finance_data_R](https://github.com/jonmgeiger/household-conditions/blob/main/scripts/download_finance_data.R) for data retreival information
+
+| Variables | Description |
+| --- | --- |
+| `leaid` | Local education agency identification number|
+| `fed_per_child` | 4-year average total federal funding per child (2014-2017)|
+| `state_per_child` | 4-year average total state funding per child (2014-2017)|
+| `local_per_child` | 4-year average total local funding per child (2014-2017)|
