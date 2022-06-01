@@ -1,13 +1,18 @@
 # Household Conditions by Geographic School District
 
-[View analyses here!](https://jonmgeiger.github.io/household-conditions/)
+For the completion of the Data & Society Capstone course at Seattle Pacific University, our class was asked to follow the guidelines of the 2022 Data Challenge Expo put on by by the American Statistical Association. 
 
-Sourced from the American Community Survey (ACS) and provided by the [Urban Institute](https://datacatalog.urban.org/dataset/household-conditions-geographic-school-district), this dataset describes the share of households within a geographic school district between 2014 and 2018 under conditions that may affect remote K-12 learning environments. The following page will carfully define each variable in the data set. 
+These guidelines include: 
+- Contestants must use at least one of the five data sets selected from the Urban Institute Data Catalog
+- Contestants must combine their chosen data set with at least one other publicly available data set. One option is to use another data set from the list.
+More details can be found [here](https://community.amstat.org/dataexpo/home)
+
+Sourced from the American Community Survey (ACS) and provided by the [Urban Institute](https://datacatalog.urban.org/dataset/household-conditions-geographic-school-district), our group was assigned Household Conditions by Geogrpahic Shool District which describes the share of households within a geographic school district between 2014 and 2018 under conditions that may affect remote K-12 learning environments.
 
 ## Variables 
 
 ### School ID:
-School ID appears to be arbitrarily assigned. 
+Distinct district ID
 
 ### State: 
 Includes all 50 States of the US.
@@ -26,7 +31,6 @@ These five-year estimates of household conditions within a school district are c
 ### Poverty (SAIPE estimate): 
 A student is considered to be in poverty if their family’s income is at or below 100 percent of the federal poverty level. The poverty level changes each year and is calculated based on how many people are living in a household. 
 _(See poverty rates between 2014 and 2018 according to the [HHS Poverty Guidelines](https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines/prior-hhs-poverty-guidelines-federal-register-references))_
-
 
 ### Linguistically Isolated: 
 A student is considered linguistically isolated if no one at or above the age of 14 speaks English as their first language, or who speaks English “very well” as their second language. 
@@ -57,5 +61,4 @@ Because each household condition is an estimate, this dataset includes a margin 
 (See page 8 about MOEs for Zero Counts and Percent Estimates of Zero or 100 Percent)
 
 
-
-
+[View analyses here!](https://jonmgeiger.github.io/household-conditions/)
