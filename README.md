@@ -46,11 +46,9 @@ We completed anlayses each week to document our data exploration and findings as
 Here are the analysis in order of when they were completed. These can also be found in the [analysis directory](https://github.com/jonmgeiger/household-conditions/tree/main/analyses) but they are not in order) 
 
 Week 1: 
-[prelim-analysis](https://jonmgeiger.github.io/household-conditions/analyses/prelim-analysis.html)
-
-[margins-of-error](https://jonmgeiger.github.io/household-conditions/analyses/margins-of-error.html)
-
-[race_households-join](https://jonmgeiger.github.io/household-conditions/analyses/race_households_join.html)
+- [prelim-analysis](https://jonmgeiger.github.io/household-conditions/analyses/prelim-analysis.html)
+- [margins-of-error](https://jonmgeiger.github.io/household-conditions/analyses/margins-of-error.html)
+- [race_households-join](https://jonmgeiger.github.io/household-conditions/analyses/race_households_join.html)
 
 
 The first dataset that we joined to the household conditions dataset was race and ethnic data, as we wanted to incorporate race and ethnic data in order to explore the relationship race and household conditions within the districts. 
