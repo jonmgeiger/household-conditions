@@ -28,13 +28,31 @@ These five-year estimates of household conditions within a geographic school dis
 |`Lack of computer or broadband internet`| Students living in a household without a computer or without broadband internet connection. This estimate includes household with non-dial-up internet in its definition of broadband. This estimate also considers desktop computers, laptops, smartphones and tablets as computers.|
 
 ### Margin of Error: 
-Because each household condition is an estimate, this dataset includes a margin of error variable for each estimate. The Census Bureau has documentation of the methodology used by the ACS to calculate estimates and margin of errors.| 
+Because each household condition is an estimate, this dataset includes a margin of error variable for each estimate. The Census Bureau has documentation of the methodology used by the ACS to calculate estimates and margin of errors.
 
 [ACS Design and Methodology – Chapter 12: Variance Estimation](https://www2.census.gov/programs-surveys/acs/methodology/design_and_methodology/acs_design_methodology_ch12_2014.pdf)  
 (See Section 12.3: Margin of Error and Confidence Interval)
 
 [Documentation for the 2014-2018 Variance Replicate Estimates Tables](https://www2.census.gov/programs-surveys/acs/replicate_estimates/2018/documentation/5-year/2014-2018_Variance_Replicate_Tables_Documentation.pdf)   
 (See page 8 about MOEs for Zero Counts and Percent Estimates of Zero or 100 Percent)
+
+### Dealing with Margin of Error Columns
+The Margin of Error columns for the estimates were originally formatted 0%-100%. We transformed these MOEs into one-sided margin of errors for easier use later on. 
+- There are no NA values in the dataset, but there are many estimates that have Margin of Errors of .5 which means these estimates are likely not accurate. Thus, we filtered out all school districts with MOEs of .5 
+
+
+## Process 
+We completed anlayses each week to document our data exploration and findings as we started the process of deciding our research question. 
+Here are the analysis in order of when they were completed. These can also be found in the [analysis directory](https://github.com/jonmgeiger/household-conditions/tree/main/analyses) but they are not in order) 
+
+Week 1: 
+[prelim-analysis](https://jonmgeiger.github.io/household-conditions/analyses/prelim-analysis.html)
+[margins-of-error](https://jonmgeiger.github.io/household-conditions/analyses/margins-of-error.html)
+[race_households-join](https://jonmgeiger.github.io/household-conditions/analyses/race_households_join.html)
+
+
+The first dataset that we joined to the household conditions dataset was race and ethnic data, as we wanted to incorporate race and ethnic data in order to explore the relationship race and household conditions within the districts. 
+
 
 
 [View analyses here!](https://jonmgeiger.github.io/household-conditions/)
