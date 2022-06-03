@@ -47,7 +47,9 @@ Here are the analysis in order of when they were completed. These can also be fo
 
 Week 1: 
 [prelim-analysis](https://jonmgeiger.github.io/household-conditions/analyses/prelim-analysis.html)
+
 [margins-of-error](https://jonmgeiger.github.io/household-conditions/analyses/margins-of-error.html)
+
 [race_households-join](https://jonmgeiger.github.io/household-conditions/analyses/race_households_join.html)
 
 
