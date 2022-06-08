@@ -10,6 +10,8 @@ library(tidyverse)
 library(tidylog)
 library(openintro)
 library(leaps)
+library(ggthemes)
+theme_set(theme_clean())
 ```
 
 # Purpose

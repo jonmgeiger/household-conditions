@@ -9,6 +9,8 @@ output: openintro::lab_report
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(tidylog)
+library(ggthemes)
+theme_set(theme_clean())
 ```
 
 # Data Import and Glimpsing
