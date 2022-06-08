@@ -2,40 +2,201 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn" crossorigin="anonymous">
   <title>Household Conditions by Geographic School District</title>
 </head>
 <body>
-  <header style="background-color: #025536">
+  <header>
+    <div class="container">
+    <div class="col">
+      <div class="text-center">
     <h1>Household Conditions by Geographic School District</h1>
-    <h2>Data and Society Capstone Project<br>
-      Seattle Pacific University<br>
-      By: Jon Geiger, Noel Goodwin, and Abigail Joppa
-    </h2> <br>
+    <h3>Data and Society Capstone Project<br>
+      Seattle Pacific University<br>  </h3>
+      <h5>By: Jon Geiger, Noel Goodwin, and Abigail Joppa</h5>
+   <br>
+  </div>
+  </div></div>
   </header>
   <nav>
-    <div class="topnav">
-      <a class="active" href="index.html">Home</a>
-      <a href="data.html">Data</a>
-      <a href="analysis.html">Analysis</a>
-
-    </div>
+    <div class="container">
+    <div class="col">
+    <ul class="nav nav-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" href="index.html">Home</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="data.html">Data Dictionary</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="analysis.html">Analysis</a>
+      </li>
+    </ul>
+  </div></div>
   </nav>
   <section>
+  <div class="container">
+  <div class="col">
     <div class="home">
-    <h3>About</h3>
+    <br>
+    <p>
+      For the completion of the Data & Society Capstone course at Seattle Pacific University, our class was asked to
+      follow the guidelines of the 2022 Data Challenge Expo put on by by the American Statistical Association.
+    </p>
+    <p>These guidelines include: </p>
+    <ul>
+      <li>Contestants must use at least one of the five data sets selected from the Urban Institute Data Catalog</li>
+      <li>Contestants must combine their chosen data set with at least one other publicly available data set.
+        One option is to use another data set from the list. More details can be found
+        <a href="https://community.amstat.org/dataexpo/home">here</a>
+      </li>
+    </ul>
     <p>Sourced from the American
       Community Survey (ACS) and provided by the
       <a href="https://datacatalog.urban.org/dataset/household-conditions-geographic-school-district">Urban Institute</a>,
       this dataset describes the share of households
       within a geographic school district between 2014 and
        2018 under conditions that may affect remote K-12
-       learning environments. The following page will
-       carfully define each variable in the data set.
+       learning environments. T
     </p>
+    <h3>A Look at the Data</h3>
+      <p>These five-year estimates of household conditions within a geographic school district are calculated based on aggregate Census
+      survey data for households within each school district’s geographic location. Because of this, some estimates may include
+      households without school-aged children (noted in descriptions) which is partly accounted for in each estimate’s corresponding margin of error.</p>
+      <div class="table">
+        <table>
+          <tr>
+            <th>Variables</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>School ID	</td>
+            <td>Distinct district ID</td>
+          </tr>
+          <tr>
+            <td>State</td>
+            <td>Includes all 50 States of the US.</td>
+          </tr>
+          <tr>
+            <td>Geographic School District</td>
+            <td>A geographic school district is defined as a public-school district that has geographic
+              boundaries reported by a state. This does not include private schools or charter school
+              systems unless they have geographic boundaries that are reported by the state.</td>
+          </tr>
+          <tr>
+            <td>Children 5-17 (SAIPE* estimate)</td>
+            <td>An estimate of children between the ages 5-17 who are enrolled in school within a certain
+              geographic school district. A child is estimated to be enrolled in a school district if they
+              live within the boundaries of the district and their “assigned grade is within the grade range
+              for which the district is financially responsible”
+              <a href="https://nces.ed.gov/programs/edge/Demographic/ACSchildren">(EDGE)</a>.
+              This estimate does not account for children who are enrolled in private school or those who
+              attend school outside the boundaries of their geographically assigned public-school district.<br>
+              <em>* yearly estimate made by US Census Bureau’s Small Area Income and Poverty Estimates
+                (SAIPE) Program based on Census responses.</em>
+            </td>
+          </tr>
+          <tr>
+            <td>Poverty (SAIPE estimate)	</td>
+            <td>A student is considered to be in poverty if their family’s income is at or below 100 percent
+              of the federal poverty level. The poverty level changes each year and is calculated based on how
+              many people are living in a household. (See poverty rates between 2014 and 2018 according to the
+              <a href="https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines/prior-hhs-poverty-guidelines-federal-register-references">HHS Poverty Guidelines</a>)
+            </td>
+          </tr>
+          <tr>
+            <td>Single Parents	</td>
+            <td>Students have single parents if they are living in a household with only one father or one mother.Linguistically Isolated	</td>
+          </tr>
+          <tr>
+            <td>Linguistically Isolated	</td>
+            <td>A student is considered linguistically isolated if no one at or above the age of 14 speaks English as their first language,
+              or who speaks English “very well” as their second language.</td>
+          </tr>
+          <tr>
+            <td>Children with Disability	</td>
+            <td>Students who have cognitive, ambulatory, independent living, selfcare, vision, or hearing difficulties are considered to be children with disability.</td>
+          </tr>
+          <tr>
+            <td>Parents in vulnerable economic sectors	</td>
+            <td>Parents are considered to be in vulnerable economic sectors if they earn less than 800 dollars a week and works in industries that are most likely to be laid off.
+              This includes those working in the entertainment, service, and retail industries. Parents of a household are defined as the householder and his or her spouse or partner.</td>
+          </tr>
+          <tr>
+            <td>Crowded Conditions	</td>
+            <td>Students are considered to be living crowded conditions if there is less than one room per household member.
+              A room is a space enclosed by walls, a floor and a ceiling. This excludes bathrooms, porches, balconies, foyers, halls,
+               and unfinished basements. This estimate is calculated for all occupied households, including households without students.</td>
+          </tr>
+          <tr>
+            <td>Lack of computer or broadband internet	</td>
+            <td>Students living in a household without a computer or without broadband internet connection. This estimate includes household with
+              non-dial-up internet in its definition of broadband. This estimate also considers desktop computers, laptops, smartphones and tablets as computers.</td>
+          </tr>
+        </table>
+      </div>
+      <h4>Margin of Errors</h4>
+      <p>Because each household condition is an estimate, this dataset
+        includes a margin of error variable for each estimate.
+        The Census Bureau has documentation of the methodology used by
+        the ACS to calculate estimates and margin of errors.</p>
+        <a href="https://www2.census.gov/programs-surveys/acs/methodology/design_and_methodology/acs_design_methodology_ch12_2014.pdf">
+          ACS Design and Methodology – Chapter 12: Variance Estimation</a><br>
+          <em>(See Section 12.3: Margin of Error and Confidence Interval)</em><br>
+        <a href="https://www2.census.gov/programs-surveys/acs/replicate_estimates/2018/documentation/5-year/2014-2018_Variance_Replicate_Tables_Documentation.pdf">
+          Documentation for the 2014-2018 Variance Replicate Estimates Tables</a><br>
+          <em>(See page 8 about MOEs for Zero Counts and Percent Estimates of Zero or 100 Percent)</em><br><br>
+      <h4>Dealing with Margin of Error Columns</h4>
+      <p>The Margin of Error columns for the estimates were originally formatted 0%-100%.
+        We transformed these MOEs into one-sided margin of errors for easier use later on.
+        <li>There are no NA values in the dataset, but there are many estimates that have Margin of Errors of .5 which means these
+          estimates are likely not accurate. Thus, we filtered out all school districts with MOEs of .5</li>
+      </p>
     <h3>Our Process</h3>
-    <p></p>
+    <p>
+      Our data process was neither uniform, nor organized. Our final research question was informed by the exploration of our given
+      dataset as well as many other school district topics--a process that took most of the quarter. You will be able to follow the
+      evolution of our project and research question through our weekly
+      <a href="https://github.com/jonmgeiger/household-conditions/tree/reproducibility/slides">powerpoint updates.</a>
+      Along with the powerpoint updates, we completed anlayses each week to document our data exploration and findings as we started
+      the process of deciding our research question. Here are the analyses in order of when they were completed. These can also be
+      found in the
+      <a href="https://github.com/jonmgeiger/household-conditions/tree/main/analyses">analysis directory</a>
+       but they are not in order).
+    </p>
+    <h4>Week 1: </h4>
+    <a href="./analyses/prelim-analysis.html">Preliminary Analysis</a><br>
+    <a href="./analyses/margins-of-error.html">Margin of Error Analysis</a><br>
+    <h4>Week 2: </h4>
+    <a href="./analyses/race_households_join.html">Race-Households Join</a><br>
+    <h4>Week 4/5: </h4>
+    <a href="./analyses/grad_rates_join.html">Graduation Rates Join</a><br>
+    <a href="./analyses/grad_rates_analysis.html">Initial Graduation Rates Analysis</a><br>
+    <h4>Week 6: </h4>
+    <a href="./analyses/high_school_dist.html">High School Districts</a><br>
+    <h4>Week 7: </h4>
+    <a href="./analyses/revenue_hh_join.html">Revenue Analysis</a><br>
+    <a href="./analyses/assessment_analysis.html">Assessments Analysis</a><br>
+    <h4>Week 8/9: </h4>
+    <a href="./analyses/regression_initial.html">Initial Regression Modeling</a><br>
+    <a href="./analyses/tidymodels_regrassion.html">Tidymodels Regression Analysis</a><br>
+    <a href="./analyses/predictor_distributions.html">Predictor Distributions Analysis</a><br>
   </div>
+  <h3>Research Question</h3>
+  <p>
+    Based upon our observations throughout the quarter, we became interested graduation rates and specifically how we could predict a district's graduation rate based upon different indicators. This led us to our main reserach question:
+    <br><h5>To what extent can we use household conditions, race, assessment scores, and school funding to predict school district graduation rates in the United States?</h5>
+  </p>
+  <h3>Methodology</h3>
+  <p>
+    The first step of this question was which regression model would be most reflective of the data we had. Through the
+    tidymodels package in r we were able to run 8 different models to assess which one would be the most accurate.
+    Through these trial runs, we found that the gradient boosted tree and random forest models were the most accurate models
+    for predicting graduation rates.
+  </p>
+  <h3>Conclusions</h3>
+  <p></p>
+</div></div>
   </section>
 
   <p></p>
