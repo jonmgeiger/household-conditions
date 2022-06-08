@@ -73,7 +73,7 @@ Weeks 8-9:
 ## Research Question
 Based upon our observations throughout the quarter, we became interested graduation rates and specifically how we could predict a district's graduation rate based upon different indicators. This led us to our main reserach question: 
 
-### Are household conditions, race, assessment scores, and school funding good predictors of school district graduation rates in the United States? 
+### To what extent can we use household conditions, race, assessment scores, and school funding to predict school district graduation rates in the United States? 
 
 ## Methodology 
 
