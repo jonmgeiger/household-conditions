@@ -41,18 +41,46 @@ The Margin of Error columns for the estimates were originally formatted 0%-100%.
 - There are no NA values in the dataset, but there are many estimates that have Margin of Errors of .5 which means these estimates are likely not accurate. Thus, we filtered out all school districts with MOEs of .5 
 
 
-## Process 
-We completed anlayses each week to document our data exploration and findings as we started the process of deciding our research question. 
-Here are the analysis in order of when they were completed. These can also be found in the [analysis directory](https://github.com/jonmgeiger/household-conditions/tree/main/analyses) but they are not in order) 
+## Process
+
+Our data process was nwither uniform, nor organized. Our final research question was informed by the exploration of our given dataset as well as many other school district topics--a process that took most of the quarter. You will be able to follow the evolution of our project and research question through our weekly [powerpoint updates](https://github.com/jonmgeiger/household-conditions/tree/reproducibility/slides). Along with the powerpoint updates, we completed anlayses each week to document our data exploration and findings as we started the process of deciding our research question. Here are the analyses in order of when they were completed. These can also be found in the [analysis directory](https://github.com/jonmgeiger/household-conditions/tree/main/analyses) but they are not in order) 
+
 
 Week 1: 
 - [prelim-analysis](https://jonmgeiger.github.io/household-conditions/analyses/prelim-analysis.html)
 - [margins-of-error](https://jonmgeiger.github.io/household-conditions/analyses/margins-of-error.html)
+
+Week 2: 
 - [race_households-join](https://jonmgeiger.github.io/household-conditions/analyses/race_households_join.html)
 
+Week 4/5: 
+- [grad_rates_join](https://github.com/jonmgeiger/household-conditions/blob/main/analyses/grad_rates_join.html)
+- [grad_rates_analysis](https://github.com/jonmgeiger/household-conditions/blob/main/analyses/grad_rates_analysis.html)
 
-The first dataset that we joined to the household conditions dataset was race and ethnic data, as we wanted to incorporate race and ethnic data in order to explore the relationship race and household conditions within the districts. 
+Week 6: 
+- [high_school_dist](https://github.com/jonmgeiger/household-conditions/blob/reproducibility/analyses/high_school_dist.html)
+
+Week 7: 
+- [assessment_analysis](https://jonmgeiger.github.io/household-conditions/analyses/assessment_analysis.html)
+- [revenue_analysis](https://jonmgeiger.github.io/household-conditions/analyses/revenue_hh_join.html)
+
+Weeks 8-9: 
+- [regression_initial](https://jonmgeiger.github.io/household-conditions/analyses/regression_initial.html)
+- [tidymodels_regression](https://jonmgeiger.github.io/household-conditions/analyses/tidymodels_regrassion.html)
+- [predictor_distributions.html](https://jonmgeiger.github.io/household-conditions/analyses/predictor_distributions.html)
 
 
+## Research Question
+Based upon our observations throughout the quarter, we became interested graduation rates and specifically how we could predict a district's graduation rate based upon different indicators. This led us to our main reserach question: 
 
-[View analyses here!](https://jonmgeiger.github.io/household-conditions/)
+### Are household conditions, race, assessment scores, and school funding good predictors of school district graduation rates in the United States? 
+
+## Methodology 
+
+The first step of this question was which regression model would be most reflective of the data we had. Through the tidymodels package in r we were able to run 8 different models to assess which one would be the most accurate. Through these trial runs, we found that the gradient boosted tree and random forest models were the most accurate models for predicting graduation rates. 
+
+Next steps? what else to say? 
+
+## Conclusions: 
+
+
