@@ -10,7 +10,7 @@ to_moe <- function(moe) {
             as.numeric() %>%    # Convert to numbers
             diff() %>%          # Take the difference
             `/`(2) %>%          # Single-sided MoE
-            `/`(100) %>%        # Convert to proportion
+            # `/`(100) %>%        # Convert to proportion
             return()            # Return Margin of Error
     }
     lapply(moe, FUN = moe_single) %>%
@@ -42,13 +42,15 @@ state_region<- data.frame(state.name, state.region) %>%
     region = state.region
   )
 
-district_regions <- merge(x=fips_data, y=state_region, by="state", all.x=TRUE)
-noNY <- filter(district_regions, children <= 1000000)
+district_regions <- fips_data %>% 
+    left_join(y=state_region, by=c("state" = "state")) %>%
+    filter(children <= 1000000) %>%
+    relocate(region, .after = state) %>%
+    mutate(across(starts_with("pct"), 
+                  .fns = function(x) x*100))
   
 
-View(noNY)
-
-noNY %>% write_csv("../data/hh.csv")
+district_regions %>% write_csv("../data/hh.csv")
 
 
 
