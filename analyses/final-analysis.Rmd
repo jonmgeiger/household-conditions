@@ -104,11 +104,14 @@ assess <- read_csv("../data/assess.csv", show_col_types = FALSE) %>%
 finance <- read_csv("../data/finance.csv", show_col_types = FALSE) %>%
     mutate(leaid = as.integer(leaid))
 
+hs_dists <- read_csv("../data/hs_dist.csv")
+
 data <- hh %>%
     left_join(grad,    by = c("leaid" = "leaid")) %>%
     left_join(race,    by = c("leaid" = "leaid")) %>%
     left_join(assess,  by = c("leaid" = "leaid")) %>%
     left_join(finance, by = c("leaid" = "leaid")) %>%
+    inner_join(hs_dists, by = c("leaid" = "leaid")) %>%
     select(
         -state, -leaid
     ) %>%
@@ -127,11 +130,11 @@ nrow(data)
 ## Data Splitting and Folding
 
 ```{r split-and-fold}
-set.seed(2345)
+set.seed(3456)
 main_split <- initial_split(data, strata = region, prop = 0.8)
 main_train <- training(main_split)
 main_test  <- testing(main_split)
-set.seed(5432)
+set.seed(6543)
 main_folds <- vfold_cv(main_train, strata = region)
 ```
 
@@ -275,7 +278,7 @@ i 7 of 7 tuning:     main_xgboost
 ```
 
 ```{r model-load}
-main_tune <- readRDS("trained_models/2022-05-30_main_tune.rds")
+main_tune <- readRDS("trained_models/2022-06-09_main_tune.rds")
 ```
 
 ```{r model-evaluation}
