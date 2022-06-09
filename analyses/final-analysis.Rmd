@@ -8,6 +8,8 @@ output: openintro::lab_report
 ```{r load-packages, message=F, warning=F}
 library(tidyverse, warn.conflicts = F)
 library(tidymodels, warn.conflicts = F)
+library(ggthemes)
+theme_set(theme_clean())
 cores <- parallel::detectCores()
 ```
 
@@ -322,4 +324,28 @@ test_results %>%
     extract_fit_parsnip() %>%
     vip(num_features = 20)
 
+```
+
+```{r}
+ggplot(data, aes(x = children, y = grad_rate_midpt)) + 
+    geom_point(alpha = 0.1) + 
+    scale_x_log10() + 
+    labs(x = "# of Children", 
+         y = "Graduation Rate", 
+         title = "School District Graduation Rates versus Number of Children") + 
+    geom_smooth()
+
+ggplot(data, aes(x = pct_white, y = math_score)) + 
+    geom_point(alpha = 0.1) + 
+    labs(x = "Percentage White", 
+         y = "Math Test Score", 
+         title = "Math Test Scores versus Percentage White Demographic") + 
+    geom_smooth()
+
+ggplot(data, aes(x = pct_SP, y = pct_HHVJ)) + 
+    geom_point(alpha = 0.1) + 
+    labs(x = "Percentage of Single Parent Households", 
+         y = "Percentage of Households with Vulnerable Jobs", 
+         title = "Single Parent Households versus Households with Vulnerable Jobs") + 
+    geom_smooth()
 ```
