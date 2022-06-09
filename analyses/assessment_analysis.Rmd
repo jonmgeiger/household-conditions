@@ -13,11 +13,17 @@ library(tidyverse)
 library(readr)
 library(corrplot)
 library(ggthemes)
+source("../scripts/prune_race_variables.R")
 theme_set(theme_clean())
 
-school_assess <- read_csv("../data/assess.csv")
-grad_raceP_household_rev <- read_csv("../data/grad_raceP_household_rev.csv")
-
+assess <- read_csv("../data/assess.csv")
+hh <- read_csv("../data/hh.csv") %>%
+  select(-contains("MOE"))
+race <- read_csv("../data/race.csv") %>% 
+    prune_and_predom() %>%
+    mutate(leaid = as.integer(leaid), 
+           predom_race = as.character(predom_race))
+grad <- read_csv("../data/grad.csv")
 
 ```
 
@@ -26,12 +32,12 @@ grad_raceP_household_rev <- read_csv("../data/grad_raceP_household_rev.csv")
 
 Lets check out the distribution of reading scores. There is quite a lot of variability in reading scores, but the bulk of the reading scores tend to be between about 40 and 75. 
 ```{r}
-school_assess %>%
+assess %>%
   ggplot(aes(x=read_score)) +
   geom_histogram(bins = 100)+
   theme_minimal()
 
-ggplot(school_assess, aes(x=read_score)) +
+ggplot(assess, aes(x=read_score)) +
   geom_boxplot()+
   theme_minimal()
 ```
@@ -41,11 +47,11 @@ ggplot(school_assess, aes(x=read_score)) +
 The math scores are also pretty variable and ranges between 0 and 100. The average math scores tend to be lower than the reading scores with the bulk of the districts having scores between 25 and 63. 
 
 ```{r}
-ggplot(school_assess, aes(x=math_score)) +
+ggplot(assess, aes(x=math_score)) +
   geom_histogram(bins = 100)+
   theme_minimal()
 
-ggplot(school_assess, aes(x=math_score)) +
+ggplot(assess, aes(x=math_score)) +
   geom_boxplot()+
   theme_minimal()
 ```
@@ -53,34 +59,12 @@ ggplot(school_assess, aes(x=math_score)) +
 ## Join by LEAID 
 
 ```{r}
-district_assess <- grad_raceP_household_rev %>%
-  left_join(school_assess, by = c("LEAID" = "leaid"))
+district_assess <- hh %>%
+  left_join(assess, by = "leaid")%>%
+  left_join(race, by = "leaid") %>%
+  left_join(grad, by = "leaid")
 ```
 
-
-## Add Predominant Rate Indicator 
-
-```{r}
-district_assess <- district_assess %>%
-    select(17:22) %>%
-    mutate(
-        predom_race = names(.)[max.col(.)],
-        predom_race = predom_race %>% 
-            str_replace_all("pct_", ""), 
-        predom_race = predom_race %>% 
-            factor(levels = c("hisp_latino", "white", 
-                              "black", "native", "asian"), 
-                   labels = c("Hispanic/Latino", "White", 
-                              "Black", "Native American", "Asian")
-            )
-    ) %>%
-    select(predom_race) %>% 
-    bind_cols(district_assess) %>%
-    relocate(predom_race, .after = pct_CLI) 
-
-district_assess %>%
-    count(predom_race)
-```
 
 ## Correlations
 
