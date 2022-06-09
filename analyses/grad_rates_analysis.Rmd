@@ -9,6 +9,8 @@ output: openintro::lab_report
 library(tidyverse)
 library(openintro)
 library(corrplot)
+library(ggthemes)
+theme_set(theme_clean())
 source("../scripts/prune_race_variables.R")
 ```
 

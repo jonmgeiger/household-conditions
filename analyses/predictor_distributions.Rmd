@@ -9,9 +9,8 @@ output: openintro::lab_report
 library(tidyverse)
 library(openintro)
 library(scales)
-library(ggthemes)
 library(corrplot)
-
+library(ggthemes)
 theme_set(theme_clean())
 ```
 

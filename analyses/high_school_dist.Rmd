@@ -9,13 +9,15 @@ output: openintro::lab_report
 library(tidyverse)
 library(tidylog)
 library(openintro)
+library(ggthemes)
+theme_set(theme_clean())
 ```
 
 
 ### Import data
 
 ```{r, message=FALSE}
-Public_Schools <- read_csv("../raw/public_schools.csv")
+Public_Schools <- read_csv("../raw/Public_Schools.csv")
 hh <- read_csv("../data/hh.csv")
 
 ```

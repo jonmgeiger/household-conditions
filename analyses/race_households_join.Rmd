@@ -8,6 +8,8 @@ output: openintro::lab_report
 ```{r load-packages, message=FALSE}
 library(tidyverse)
 library(openintro)
+library(ggthemes)
+theme_set(theme_clean())
 ```
 
 ### Import data
@@ -101,7 +103,7 @@ race_data <- race_data %>%
   select(-"Iteration") %>% # This variable is not relevant, as it is the same through each entry. We can keep in mind that it is 105.
   mutate(leaid = as.integer(leaid))
   
-View(race_data)
+race_data %>% head(10)
 ```
 
 ### What is a Geo ID? 
@@ -141,7 +143,7 @@ missing_race_dist <- dist_race_join %>%
   filter_all(any_vars(is.na(.))) %>%
   select(leaid, state, dist, children)
 
-View(missing_race_dist)
+missing_race_dist %>% head(10)
 
 ```
 
@@ -155,5 +157,4 @@ missing_race_dist %>%
 ### Next steps
 
 - Figure out why there are 1,404 missing school districts in the race data and see if the missing data is accessible elsewhere
-
 
