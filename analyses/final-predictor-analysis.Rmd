@@ -8,6 +8,8 @@ output: openintro::lab_report
 ```{r load-packages, message=F, warning=F}
 library(tidyverse, warn.conflicts = F)
 library(tidymodels, warn.conflicts = F)
+library(ggthemes)
+theme_set(theme_clean())
 source("../scripts/prune_race_variables.R")
 ```
 
@@ -294,7 +296,10 @@ trans %>%
     ggplot(aes(x = value)) + 
     geom_histogram() + 
     facet_grid(cols = vars(transformation_status), 
-               rows = vars(type), scales = "free")
+               rows = vars(type), scales = "free") + 
+    labs(x = NULL, y = NULL, 
+         title = "Original vs. Log-transformed Children", 
+         subtitle = "(Log transformations are base-10)")
 
 trans %>%
     filter(type %>% str_detect("score")) %>%
