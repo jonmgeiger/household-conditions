@@ -1,0 +1,268 @@
+<html lang="eng">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn" crossorigin="anonymous">
+
+  <title>Household Conditions by Geographic School District</title>
+</head>
+<body>
+  <header>
+    <div class="container">
+    <div class="col">
+    <div class="text-center">
+    <h1>Household Conditions by Geographic School District</h1>
+    <h3>Data and Society Capstone Project<br>
+      Seattle Pacific University<br>
+    </h3>
+    <h5>By: Jon Geiger, Noel Goodwin, and Abigail Joppa</h5><br>
+  </div>
+  </div></div>
+  </header>
+  <nav>
+    <div class="container">
+    <div class="col">
+    <ul class="nav nav-tabs">
+      <li class="nav-item">
+        <a class="nav-link" href="index.html">Home</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link active" href="data.html">Data Dictionary</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="analysis.html">Analysis</a>
+      </li>
+    </div></div>
+  </nav>
+  <section>
+  <div class="container">
+  <div class="col">
+    <div class="data">
+      <br>
+
+
+      <h3>Household Conditions Dataset
+        <a href="https://github.com/jonmgeiger/household-conditions/blob/main/data/hh.csv">(hh.csv)</a>
+      </h3>
+      <p>
+        Originally provided by the
+        <a href="https://datacatalog.urban.org/dataset/household-conditions-geographic-school-district">Urban Institute</a>
+      </p>
+      <p>
+        Cleaned and pruned version of the original household conditions dataset. Changes include:
+        <li>Rename variables for easier use (see [
+          <a href="https://github.com/jonmgeiger/household-conditions/blob/main/scripts/names_list.R">names_list.R</a>
+          ])</li>
+        <li>Transform the original "Margin of Error" (MOE) variable into a single sided MOE for future anlayses</li>
+        <li>Include LEAID (state fips code + district ID) for easy joining</li>
+        <li>Filter out New York Department of Education "School District" -- This is an extreme outlier, as it includes the children for all 32 NY districts.
+          See
+          <a href="https://github.com/jonmgeiger/household-conditions/blob/main/scripts/create_hh.R">create_hh.R</a> for more details.</li>
+      </p>
+      <div class="table">
+        <table>
+          <tr>
+            <th>Variables</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>state</td>
+            <td>State where each district resides</td>
+          </tr>
+          <tr>
+            <td>leaid</td>
+            <td>	Local education agency identification number</td>
+          </tr>
+          <tr>
+            <td>dist</td>
+            <td>District name</td>
+          </tr>
+          <tr>
+            <td>children</td>
+            <td>An estimate of children between the ages 5-17 who are enrolled in school within a certain geographic school district.</td>
+          </tr>
+          <tr>
+            <td>pct_pov</td>
+            <td>Percent of students within each geographical district boundary estimated to be living in povertyAn estimate of children between the ages 5-17 who are enrolled in school within a certain geographic school district.</td>
+          </tr>
+          <tr>
+            <td>pct_SP</td>
+            <td>Percent of households within each geographical district
+              boundary estimated to be living in a household with only one father or one mother.</td>
+          </tr>
+          <tr>
+            <td>SP_MOE</td>
+            <td>Single-sided MOE for pct_SP estimate</td>
+          </tr>
+          <tr>
+            <td>pct_HHVJ</td>
+            <td>Percent of households within a geographical district estimated to have a homeowner working in a vulnerable economic sector</td>
+          </tr>
+          <tr>
+            <td>HHVJ_MOE</td>
+            <td>Single-sided MOE for pct_HHVJ estimate</td>
+          </tr>
+          <tr>
+            <td>pct_CC</td>
+            <td>Percent of households within a geographical district estimated to be living in crowded conditions</td>
+          </tr>
+          <tr>
+            <td>CC_MOE</td>
+            <td>Single-sided MOE for pct_CC estimate</td>
+          </tr>
+          <tr>
+            <td>pct_NCI</td>
+            <td>Percent of households within a geographical district estimated to be without computer or internet access</td>
+          </tr>
+          <tr>
+            <td>nci_MOE</td>
+            <td>Single-sided MOE for pct_NCI estimate</td>
+          </tr>
+          <tr>
+            <td>pct_CD</td>
+            <td>Percent of students estimated to be disabled</td>
+          </tr>
+          <tr>
+            <td>cd_MOE</td>
+            <td>Children with disabilities single-sided margin or error</td>
+          </tr>
+          <tr>
+            <td>pct_CLI</td>
+            <td>Percent of children within a geographic school district estimated to be linguistically isolated</td>
+          </tr>
+          <tr>
+            <td>cli_MOE</td>
+            <td>Single-sided margin of error for pct_CLI</td>
+          </tr>
+          <tr>
+            <td>region</td>
+            <td>South, West, North Central, Northeast</td>
+          </tr>
+        </table>
+      </div>
+
+      <h3>Race Dataset
+      <a href="https://github.com/jonmgeiger/household-conditions/blob/main/data/race.csv">
+        (race.csv)</a></h3>
+      <p>
+        <li>Sourced from the
+          <a href="https://nces.ed.gov/programs/edge/Demographic/ACS">
+            American Community Survey (ACS)</a>
+          which incudes demographic estimates of each school district in the US averaged over 2014-2018.</li>
+        <li>See
+          <a href="https://github.com/jonmgeiger/household-conditions/blob/reproducibility/scripts/create_race.R">
+            create_race.R</a> for data retreival information</li>
+      </p>
+
+      <h3>Finance Dataset
+      <a href="https://github.com/jonmgeiger/household-conditions/blob/reproducibility/data/finance.csv">
+      (finance.csv)</a></h3>
+      <p>
+        <li>Accessed through the
+          <a href="https://github.com/UrbanInstitute/education-data-package-r">
+            Urban Institute R package API</a></li>
+        <li>Sourced form the Common Core of Data (CCD)</li>
+        <li>See
+          <a href="https://github.com/jonmgeiger/household-conditions/blob/main/scripts/download_finance_data.R">
+            download_finance_data_R</a> for data retreival information</li><br>
+      <div class="table">
+        <table>
+          <tr>
+            <th>Variables</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>leaid</td>
+            <td>Local education agency identification number</td>
+          </tr>
+          <tr>
+            <td>fed_per_child</td>
+            <td>4-year average total federal funding per child (2014-2017)</td>
+          </tr>
+          <tr>
+            <td>state_per_child</td>
+            <td>4-year average total state funding per child (2014-2017)</td>
+          </tr>
+          <tr>
+            <td>local_per_child</td>
+            <td>4-year average total local funding per child (2014-2017)</td>
+          </tr>
+        </table>
+      </div>
+      <h3>Graduation Rate Dataset
+      <a href="https://github.com/jonmgeiger/household-conditions/blob/reproducibility/data/grad.csv">
+        (grad.csv)</a></h3>
+      <p>
+        <li>Sourced from an
+          <a href="https://github.com/UrbanInstitute/education-data-package-r">
+            Urban Institute R package</a>
+             which includes graduation rates by cohort</li>
+        <li>See
+          <a href="https://github.com/jonmgeiger/household-conditions/blob/main/scripts/download_grad_data.R">script
+          </a> for reference on how we transformed the data to include graduation rates by district rather than cohort.</li>
+      </p>
+      <div class="table">
+        <table>
+          <tr>
+            <th>Variables</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>leaid</td>
+            <td>Local education agency identification number</td>
+          </tr>
+          <tr>
+            <td>grad_rate_midpt</td>
+            <td>Average graduation rate</td>
+          </tr>
+        </table>
+      </div>
+
+
+      <h3>Assessment Dataset
+        <a href="https://github.com/jonmgeiger/household-conditions/blob/main/data/assess.csv">
+           (assess.csv)</a></h3>
+        <p>
+          <li>Accessed through the
+            <a href="https://github.com/UrbanInstitute/education-data-package-r">
+              Urban Institute R package</a> API</li>
+          <li>Sourced from edfacts</li>
+          <li> See
+            <a href="https://github.com/jonmgeiger/household-conditions/blob/main/scripts/download_assess_data.R">
+              download_assess_data_R</a> for data retreival information</li>
+        </p>
+        <div class="table">
+          <table>
+            <tr>
+              <th>Variables</th>
+              <th>Description</th>
+            </tr>
+            <tr>
+              <td>leaid</td>
+              <td>Local education agency identification number</td>
+            </tr>
+            <tr>
+              <td>read_score</td>
+              <td>5-year average reading assessment score (2014-2018)</td>
+            </tr>
+            <tr>
+              <td>math_score</td>
+              <td>5-year average math assessment score (2014-2018)</td>
+            </tr>
+            <tr>
+              <td>total_score</td>
+              <td>5-year average total (reading+math) assessment score (2014-2018)</td>
+            </tr>
+          </table>
+          <br>
+        </div>
+    </div>
+  </div></div>
+  </section>
+
+  <p></p>
+  <footer>
+    <p><br><br><br></p>
+  </footer>
+</body>
+</html>
