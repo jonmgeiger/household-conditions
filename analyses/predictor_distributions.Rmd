@@ -11,16 +11,30 @@ library(openintro)
 library(scales)
 library(corrplot)
 library(ggthemes)
+source("../scripts/prune_race_variables.R")
 theme_set(theme_clean())
 ```
 
 # Import Data
 
 ```{r}
-data <- read_csv("../data/grad_raceP_household.csv") %>% 
-    select(-student_total)
+
+assess <- read_csv("../data/assess.csv")
+hh <- read_csv("../data/hh.csv") %>%
+  select(-contains("MOE"))
+race <- read_csv("../data/race.csv") %>% 
+    prune_and_predom() %>%
+    mutate(leaid = as.integer(leaid), 
+           predom_race = as.character(predom_race))
+grad <- read_csv("../data/grad.csv")
+
+data <- hh %>%
+  left_join(assess, by = "leaid")%>%
+  left_join(race, by = "leaid") %>%
+  left_join(grad, by = "leaid")
+
 data <- data %>%
-    select(LEAID, 
+    select(leaid, 
            dist, children, 
            grad_rate_midpt, 
            starts_with("pct"), 
@@ -240,9 +254,3 @@ hh_conds %>%
 
 For school districts which are primarily Asian, we can see that almost all of the variables are strongly correlated with one another. This will require some thought for our regression analysis, though it is important to note that there are only 51 school districts recorded which are predominantly Asian.
 
-
-# Export Data
-
-```{r}
-write_csv(data, "../data/grad_predom-raceP_household.csv")
-```
