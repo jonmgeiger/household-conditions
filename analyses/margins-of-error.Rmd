@@ -8,10 +8,12 @@ output: openintro::lab_report
 ```{r load-packages, message=FALSE}
 library(tidyverse)
 library(readxl)
+library(ggthemes)
+theme_set(theme_clean())
 
 # Import data and clean names
 
-district_data <- read_excel("../data/NHGIS_District_data.xlsx")
+district_data <- read_excel("../raw/NHGIS_District_data.xlsx")
 source("../scripts/names_list.R")
 names(district_data) <- names_list
 ```

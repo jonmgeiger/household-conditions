@@ -9,6 +9,8 @@ output: openintro::lab_report
 library(tidyverse)
 library(readr)
 library(corrplot)
+library(ggthemes)
+theme_set(theme_clean())
 ```
 
 ### Download Packages

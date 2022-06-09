@@ -9,27 +9,31 @@ output: openintro::lab_report
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(tidylog)
+library(ggthemes)
+theme_set(theme_clean())
 ```
 
 # Data Import and Glimpsing
 
 ```{r import-data}
 grad_data <- read_csv("../data/grad.csv", 
-                       show_col_types = FALSE)
-race_data  <- read_csv("../data/raceP_household.csv", 
-                       show_col_types = FALSE)
+                       show_col_types = FALSE) %>%
+    mutate(leaid = as.integer(leaid))
+hh_data <- read_csv("../data/hh.csv", 
+                    show_col_types = FALSE) %>%
+    mutate(leaid = as.integer(leaid))
+race_data <- read_csv("../data/race.csv", 
+                       show_col_types = FALSE) %>%
+    mutate(leaid = as.integer(leaid))
 ```
 
 Let's take a look at the variables in each of these data sets: 
 ```{r}
-race_data %>% glimpse()
 grad_data %>% glimpse()
+race_data %>% glimpse()
 ```
 
-Graduation Data noticings: 
-
-- Missing data for graduation rates (low, midpoint, high) are encoded as either `NA` or as a negative value
-- One row is one cohort from one school district in one year. We need to filter out the missing data (negatives and NAs), then group by school district
+Initially, these data were in a different, more raw form, since transformed by the `download_grad_data.R` script in the `scripts/` directory. One row represented one cohort in one school district in one year, so in order to transform the data, we needed to take weighted averages across all the cohorts in a school district, then across all the years for a school district, in order to make one row equal to one school district in the 2014-2018 time period. 
 
 From EDFacts documentation: 
 
@@ -37,17 +41,12 @@ From EDFacts documentation:
 
 # Data Cleaning
 
-Since we're only after the graduation rates, we can ignore all of the columns giving other extraneous information.
+In cleaning the data, we ignored all of the columns giving extraneous information, and just included the LEAID, the year, the cohort number, and the grduation rate midpoint.
 
-```{r}
-grad_rates <- grad_data %>% 
-    select(leaid, lea_name, year, cohort_num, grad_rate_midpt) 
-```
+If the variable `cohort_num` represents the number of students in that cohort (rather than the cohort index, *per se*), then we can add the total number of students in a school district in a year, then take the weighted average of the graduation rates. We can then summarize across cohort, and across year, in order to get the five-year average for the school districts. When summarizing across the years, we also cannot assume that the total number of students across all cohorts is the same, so we also need to take a weighted average across all of the years. This is not too difficult, as we simply need to take column sums in the grouped data frames, create weighting proportions, and sum the product of the weighs with the graduation rates. This is demonstrated below, and the final product is a data frame for which one row is one high school district, with graduation rate data properly averaged for the five-year measurement. 
 
-If the variable `cohort_num` represents the number of students in that cohort (rather than the cohort index, *per se*), then we can add the total number of students in a school district in a year, then take the weighted average of the graduation rates. We can then summarize across cohort, and across year, in order to get the five-year average for the school districts. When summarizing across the years, we also cannot assume that the total number of students across all cohorts is the same, so we also need to take a weighted average across all of the years. This is not too difficult, as we simply need to take column sums in the grouped data frames, create weighting proportions, and sum the product of the weighs with the graduation rates. This is done below, and the final product is a data frame for which one row is one high school district, with graduation rate data properly averaged for the five-year measurement. 
-
-```{r}
-grad_rates_summarized <- grad_rates %>% 
+```{r, eval = F}
+grad_data_summarized <- grad_data %>% 
     filter(
         !is.na(cohort_num), grad_rate_midpt > 0
     )%>%
@@ -73,7 +72,6 @@ grad_rates_summarized <- grad_rates %>%
         student_total = max(student_total), 
         grad_rate_midpt = sum(student_weight * grad_rate_midpt)
     )
-grad_rates_summarized
 ```
 
 # Joining the Data
@@ -83,15 +81,23 @@ Let's join the graduation data with the race data, and take a look at the school
 
 ```{r join-datasets}
 nrow(race_data)
-nrow(grad_rates_summarized)
+nrow(grad_data)
 
-data_joined <- race_data %>% 
-    left_join(grad_rates_summarized, 
-              by = c("LEAID" = "leaid"))
+data_joined <- hh_data %>%
+    left_join(race_data, 
+              by = c("leaid" = "leaid")) %>% 
+    left_join(grad_data, 
+              by = c("leaid" = "leaid"))
+    
 
-data_not_joined <- race_data %>% 
-    anti_join(grad_rates_summarized, 
-              by = c("LEAID" = "leaid"))
+data_not_joined <- hh_data %>%
+    left_join(race_data, 
+              by = c("leaid" = "leaid")) %>% 
+    anti_join(grad_data, 
+              by = c("leaid" = "leaid")) %>%
+    select(-ends_with(".y"))
+names(data_not_joined) <- names(data_not_joined) %>%
+    str_remove_all(".x")
 ```
 
 # Explaining Un-joined Data
@@ -101,8 +107,7 @@ Now that we've joined our data, let's take a look at some of the data that wasn'
 ```{r}
 data_not_joined %>% 
     is.na() %>% 
-    colSums() %>% 
-    head(7)
+    colSums()
 
 data_not_joined %>% 
     arrange(desc(children)) %>% 
@@ -112,7 +117,7 @@ data_not_joined %>%
 
 Many of these school districts didn't join properly because they lack LEA IDs. 
 
-We can notice that the very largest "school district," the New York City Department of Education, didn't have graduation rate data associated with it. The reasoning for this is explained in the documentation for the graduation rate data: 
+Initially upon running this analysis, we observed the New York City Department of Education to be the first and foremost unjoined row. For the sake of data cleanliness, we have since removed this row from the original, cleaned `hh.csv` file for the following reason:
 
 > "New York – Data for the New York City School District (NCES LEAID ‘3620580’) has been submitted as a supervisory union with 32 subordinate school districts. Each record within this file includes information about the local education agency (LEA) to which the school belongs. The schools included in this file are reported as they were submitted to EDFacts, with associations for all New York City being to these subordinate school districts. All of the subordinate school districts have the name “New York City Geographic District ##” where ## is a number between 1 and 32. If you are interested in aggregating the submitted school level data to the level of the New York City School District, use the names and LEA IDs in the Table 16 to identify the proper records within the data file."
 
@@ -120,7 +125,6 @@ Unfortunately, our original data set doesn't distinguish between all of these ge
 
 ```{r}
 data_not_joined %>% 
-    filter(children < 1000000) %>%
     ggplot(aes(x = children)) + 
     scale_x_log10() + 
     geom_boxplot() + 
@@ -128,18 +132,6 @@ data_not_joined %>%
 ```
 
 
-About 50% of the school district for which there is no data on graduation rates (didn't join properly, revealed by `anti_join()`) have between 100 and 1000 students---in other words, these are very small school districts. 
+About 50% of the school district for which there is no data on graduation rates (didn't join properly, revealed by `anti_join()`) have between about 100 and 1000 students---in other words, these are very small school districts. 
 
-It turns out that there was also no graduation rate data for the New York City Department of Education, which is a conglomeration of 32 individual school districts. While we could replace this department of education with its constituent school districts, the data we were given initially in our data set included this row, which is not, in fact, a school district. Now, similar to the New York Times at some of the newer COVID outbreaks, we will ignore New York City in our analysis. Let's reorder some of these columns and output this data to a CSV file. 
-
-# Exporting Data
-
-```{r}
-data_joined %>%
-    dplyr::relocate(
-        starts_with("grad_rate"), 
-        .after = children
-    ) %>% 
-    write_csv("../data/grad_raceP_household.csv")
-```
-
+It turns out that there was also no graduation rate data for the New York City Department of Education, which is a conglomeration of 32 individual school districts. While we could replace this department of education with its constituent school districts, the data we were given initially in our data set included this row, which is not, in fact, a school district. Similar to the New York Times at some of the newer COVID outbreaks, we will ignore New York City in our analysis. 

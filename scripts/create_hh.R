@@ -18,7 +18,7 @@ to_moe <- function(moe) {
         return()
 }   
 
-district_data <- read_xlsx("../data/NHGIS_District_data.xlsx")
+district_data <- read_xlsx("../raw/NHGIS_District_data.xlsx")
 source("names_list.R")
 names(district_data) <- names_list
 
@@ -36,6 +36,8 @@ fips_data <- fips_codes %>%
         )
     ) 
 
+
+
 state_region<- data.frame(state.name, state.region) %>%
   rename(
     state = state.name, 
@@ -47,7 +49,8 @@ district_regions <- fips_data %>%
     filter(children <= 1000000) %>%
     relocate(region, .after = state) %>%
     mutate(across(starts_with("pct"), 
-                  .fns = function(x) x*100))
+                  .fns = function(x) x*100)) %>%
+    mutate(leaid = as.integer(leaid))
   
 
 district_regions %>% write_csv("../data/hh.csv")

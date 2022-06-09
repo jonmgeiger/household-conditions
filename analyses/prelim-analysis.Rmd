@@ -15,12 +15,14 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readxl)
 library(corrplot)
+library(ggthemes)
+theme_set(theme_clean())
 ```
 
 # Importing and Cleaning Data
 
 ```{r}
-district_data <- read_excel("NHGIS_District_data.xlsx")
+district_data <- read_excel("../raw/NHGIS_District_data.xlsx")
 ```
 
 Fortunately, there isn't much initial restructuring required of this data. 

@@ -15,6 +15,7 @@ school_assess <- school_assess %>%
   select(-leaid_num, -(race:econ_disadvantaged)) %>%
   filter(read_test_pct_prof_midpt > 0, 
          math_test_pct_prof_midpt > 0) %>%
+  mutate(leaid = as.numeric(leaid)) %>%
   group_by(leaid)%>%
   summarize(read_score = mean(read_test_pct_prof_midpt), 
             math_score = mean(math_test_pct_prof_midpt))

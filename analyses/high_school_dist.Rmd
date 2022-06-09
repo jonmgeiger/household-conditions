@@ -1,0 +1,103 @@
+---
+title: "Districts with High Schools"
+author: "Jon Geiger, Noel Goodwin, Abigail Joppa"
+date: "`r Sys.Date()`"
+output: openintro::lab_report
+---
+
+```{r load-packages, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(tidylog)
+library(openintro)
+library(ggthemes)
+theme_set(theme_clean())
+```
+
+
+### Import data
+
+```{r, message=FALSE}
+Public_Schools <- read_csv("../raw/Public_Schools.csv")
+hh <- read_csv("../data/hh.csv")
+
+```
+
+Because there are schools included in this dataset that are not in the US, we are going to filter out all schools that are not in the US. Additionally, lets get rid of any variables that are irrelevant to our future analyses. District ID is the leaid so we are renaming it for consistency with other datasets. 
+```{r}
+
+US_PS <- Public_Schools %>%
+  filter(COUNTRY == "USA") %>%
+  select(-(X:OBJECTID),
+         -(ADDRESS:WEBSITE), 
+         -FT_TEACHER, 
+         -SHELTER_ID, 
+         -NCESID, 
+         -ENROLLMENT)%>%
+  rename(leaid =DISTRICTID, 
+         level = LEVEL_)
+
+```
+
+### Join household data with the public school data. 
+
+Lets join using the LEAID (district ID) so we can have a better idea of waht is going on in relation to hh conditions.  
+```{r}
+school_dist_join <- US_PS %>%
+  left_join(hh, by = c("leaid"))
+```
+
+There appears to be 11769 schools in the public school dataset that do not have coinciding school districts documented in the household dataset. 
+
+```{r}
+school_dist_join %>%
+  is.na() %>%
+  colSums()
+
+school_dist_join%>%
+  filter(is.na(dist))
+```
+
+
+### Quick look into education levels
+
+Lets take a look at what levels of education exist in the data set so we can try to isolate the districts with high schools. Based on the level variable, we can see that there are 22886 schools categorized as high schools. 
+
+```{r}
+school_dist_join%>%
+  count(level) 
+```
+
+There are a few schools that are considered "other" that include K-12 schools with graduation rates, as well as many of the "secondary" schools, so lets filter this down to only include districts with high schools in them. 
+
+Using the end grade variable as a marker of high schools, there are 26366 schools that end with grade 12 (3480 more schools than are included in the "HIGH" category".
+
+```{r}
+school_dist_join%>%
+  count(END_GRADE) 
+
+```
+
+### Filtering method
+
+This inconsistency in the dataset bares the question of how we are going to accurately filter the dataset to only include high schools. One option is to include schools that end in grade 12 OR are classified as high schools. This would include some of schools that appear to be high schools but are categorized as "other", "secondary" or "middle". Lets try it out. 
+
+```{r}
+high_dist <- school_dist_join %>%
+  filter(END_GRADE == "12" | level == "HIGH")
+
+high_dist%>%
+  count(level) 
+```
+This removed 74,498 schools, leaving only 26,457 schools in the data set that are likely high schools. This included most of the schools in the "other" category, as well as four schools categorized as "middle".
+
+### Create dataset with high school leaids
+
+We want a list of all leaids (districts) with high schools as a method of filtering the rest of our datasets to only include districts with high schools. It would make sense to do this given that there should only be graduation rates for districts with high schools. 
+
+```{r}
+high_dist <- high_dist %>%
+  select(leaid)%>%
+  distinct()
+```
+
+##### See script for creating the high school district leaid set

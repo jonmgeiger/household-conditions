@@ -8,14 +8,15 @@ output: openintro::lab_report
 ```{r load-packages, message=FALSE}
 library(tidyverse)
 library(openintro)
+library(ggthemes)
+theme_set(theme_clean())
 ```
 
 ### Import data
 
 ```{r, message=FALSE}
-race_data <- read_delim("race_ethnic_district_data.txt", delim = "|", escape_double = FALSE, trim_ws = TRUE)
-district_pcts <- read_csv("district_pcts.csv")
-
+race_data <- read_delim("../raw/race_raw.txt", delim = "|", escape_double = FALSE, trim_ws = TRUE)
+hh <- read_csv("../data/hh.csv")
 ```
 
 
@@ -29,67 +30,67 @@ names(race_data)
 I used the data dictionary provided to rename the variable names. 
 *note: It looks like they only looked combined all of the Asian population which is a pretty big umbrella. It may be worth looking into what exactly this variable includes. 
 ```{r}
-nameslist<- c("geo_id",
+race_names<- c("geo_id",
               "dist", 
-              "LEAID", 
+              "leaid", 
               "year", 
               "Iteration",
                "total_pop_est", #Total population
-               "total_pop_moe", 
+               "total_pop_moe", # total population MOE
                "total_hisp_latino", #Total population; Hispanic or Latino (of any race)
-               "total_hisp_latino_moe", 
+               "total_hisp_latino_moe", #Total population; Hispanic or Latino (of any race) MOE
                "pct_hisp_latino", # % total population: Hispanic or Latino (of any race)
-               "pct_hisp_latino_moe", 
+               "pct_hisp_latino_moe", # % total population: Hispanic or Latino (of any race) MOE
                "total_mexican", # total mexican population
-               "total_mexican_moe", 
+               "total_mexican_moe", # total mexican population MOE
                "pct_mexican", # % mexican population
-               "pct_mexican_moe", 
+               "pct_mexican_moe", # % mexican population MOE
                "total_puertrican", # total puertorican population
-               "total_puertrican_moe", 
+               "total_puertrican_moe", # total puertorican population MOE
                "pct_puertrican",  # % puertorican population
-               "pct_puertrican_moe", 
+               "pct_puertrican_moe", # % puertorican population MOE
                "total_cuban", # total cuban population
-               "total_cuban_moe", 
+               "total_cuban_moe", # total cuban population MOE
                "pct_cuban", # % cuban population
-               "pct_cuban_moe", 
+               "pct_cuban_moe", # % cuban population MOE
                "total_other_hl", # total population of other hispanic and latino
-               "total_other_hl_moe", 
+               "total_other_hl_moe", # total population of other hispanic and latino MOE
                "pct_other_hl", # % population of other hispanic and latino
-               "pct_other_hl_moe", 
+               "pct_other_hl_moe", # % population of other hispanic and latino MOE
                "total_NOT_hl", # total population that are not hispanic nor latino
-               "total_NOT_hlmoe", 
+               "total_NOT_hlmoe", # total population that are not hispanic nor latino MOE
                "pct_NOT_hl", # % population that are not hispanic nor latino
-               "pct_NOT_hl_moe", 
-               "total_white", #total population while
-               "total_white_moe", 
+               "pct_NOT_hl_moe", # % population that are not hispanic nor latino MOE
+               "total_white", #total population white
+               "total_white_moe", #total population white MOE
                "pct_white", # % population white
-               "pct_white_moe", 
+               "pct_white_moe", # % population white MOE
                "total_black", #total population black or african american
-               "total_black_moe", 
+               "total_black_moe", #total population black or african american MOE
                "pct_black", # % population black or african american
-               "pct_black_moe", 
+               "pct_black_moe", # % population black or african american MOE
                "total_native", #total native population 
-               "total_native_moe", 
+               "total_native_moe", #total native population MOE
                "pct_native", # % native population
-               "pct_native_moe", 
+               "pct_native_moe", # % native population MOE
                "total_asian", #total asian population 
-               "total_asian_moe", 
+               "total_asian_moe", #total asian population MOE
                "pct_asian", # % asian population
-               "pct_asian_moe", 
-               "total_PI", #PI = Native Hawiian/PAcific Islander 
-               "total_PI_moe", 
-               "pct_PI", 
-               "pct_PI_moe", 
+               "pct_asian_moe", # % asian population MOE
+               "total_PI", # total PI = Native Hawiian/PAcific Islander 
+               "total_PI_moe", # total PI = Native Hawiian/PAcific Islander MOE
+               "pct_PI", # % PI 
+               "pct_PI_moe", # % PI MOE
                "total_other", #total people of other race (nonhisp/latino)
-               "total_other_moe", 
-               "pct_other", 
-               "pct_other_moe",
-               "total_nonhl_2race",#non hispanic or latio with 2 races or more
-               "total_nonhl_2race_moe", 
-               "pct_nonhl_2race", 
-               "pct_nonhl_2race_moe", 
+               "total_other_moe", #total people of other race (nonhisp/latino) MOE
+               "pct_other", # % people of other race (nonhisp/latino)
+               "pct_other_moe", #% people of other race (nonhisp/latino) MOE
+               "total_nonhl_2race", #non hispanic or latio with 2 races or more
+               "total_nonhl_2race_moe", #non hispanic or latio with 2 races or more MOE
+               "pct_nonhl_2race", # % non hispanic or latio with 2 races or more
+               "pct_nonhl_2race_moe", # % non hispanic or latio with 2 races or more MOE
                "total_nonhl_2_other", #Total population; Not Hispanic or Latino; Two or more                                          races; Two races including Some other race
-               "total_nonhl_2_other_moe", 
+               "total_nonhl_2_other_moe", #MOE
                "pct_nonhl_2_other", # % population; Not Hispanic or Latino; Two or more                                          races; Two races including Some other race
                "pct_nonhl_2_other_moe", 
                "total_nonhl_2_3other", # Total population; Not Hispanic or Latino; Two or more                                          races; Two races excluding Some other race, and Three                                           or more races
@@ -97,104 +98,32 @@ nameslist<- c("geo_id",
                "pct_nonhl_2_3other", # % population; Not Hispanic or Latino; Two or more                                               races; Two races excluding Some other race, and Three                                           or more races
                "pct_nonhl_2_3other_moe"
 )
-names(race_data) <- nameslist
+names(race_data) <- race_names
 race_data <- race_data %>%
-  select(-"Iteration") # This variable is not relavent, as it is the same through each entry. We                           can keep in mind that it is 105. 
-View(race_data)
+  select(-"Iteration") %>% # This variable is not relevant, as it is the same through each entry. We can keep in mind that it is 105.
+  mutate(leaid = as.integer(leaid))
+  
+race_data %>% head(10)
 ```
 
-# What is a Geo ID? 
-It appears that the geoid is a combination of some sort of US code (97000US), followed by a two digit state fips code, and lastly the school ID used in the original NHGIS district data. The same names of school districts, without specification about which state they are from (see Lincoln County School District). This may be problematic in the joining process. 
+### What is a Geo ID? 
+It appears that the geoid** is a combination of some sort of US code (97000US), followed by a two digit state fips code, and lastly the district ID used in the original NHGIS district data. The same names of school districts, without specification about which state they are from (see Lincoln County School District). This may be problematic in the joining process. 
 
-In order to match the correct school district with the original NHGIS district data, we will separate the geoid into three codes and join using both the distict name and school id. 
 ```{r}
 race_data %>%
 filter(str_detect(dist, 'Lincoln County School District'))
 ```
 
-### Separate geo_id
+Update: After some exploration, we now know that that the two digit state code (fips) and the district ID make up the leaid which is already included in the race data. Instead of separating the geoid as we did previously, we will use the leaid to join with the household data. 
+
+### Joining using leaid
+
+There are 1,404 missing values which is the difference between the two data sets - household data (13314), race_data (11910). This is because the household data is missing 1404 leaids. We successfully joined all of the available race data with the district data. 
 ```{r}
 
-race_data <- race_data %>%
-  separate(col = geo_id, into = c("us_id", "fips_dist"), sep = 7)%>%
-  separate(col = fips_dist, into = c("state_fips", "school_id"), sep = 2)
-
-race_data
-```
-
-### Join race data with district data
-
-After joining using both the district name and the school ID, we can see that now each district named Lincoln County School District is connected with the proper state.
-```{r}
-dist_race_data <- district_pcts %>%
-  left_join(race_data, by=c("school_ID" = "school_id", "dist" = "dist"))
-
-
-dist_race_data %>%
-filter(str_detect(dist, 'Lincoln County School District'))
-
-```
-
-
-
-
-I joined the race data to the district data intentionally, so I could see if there were any school districts that did not exist in the race data. We can see that with this join, there are 10574 school districts from the race data that were not joined with the district data. 
-```{r}
-colSums(is.na(dist_race_data))
-```
-
-
-
-
-
-Below are the school districts from the district data that were not joined. 
-```{r}
-
-na_dist <- dist_race_data %>% 
-  filter_all(any_vars(is.na(.)))
-na_dist
-```
-
-
-
-
-It looks like the reason for this is that the school district names from the race data are different from that of the district data. Lets take a better look at a few of the school districts that did not match from the race data to get a better idea of why that is. 
-```{r}
-race_data %>%
-  filter(str_detect(dist, "Cullman County") | str_detect(dist, "Dale County") | str_detect(dist, "Daleville City"))%>%
-  select(state_fips, school_id, dist)
-
-```
-
-We can see that these districts have the state tacked on the end of the school district name to distinguish from other districts. It appears that this is the case for a lot of the race data entries. Instead of separating the state from the district name, I am going to try another way to join the data through school ID and state fips code. 
-
-### Another joining attempt
-
-Using the tidycensus package, I can access the fips codes for all of the states. Because we have the fips codes for the race_data, I am going to join the fips codes with the district data by state and then proceed to join the district data with the race data by state fips code and schoool id.  
-
-```{r}
-library(tidycensus)
-data("fips_codes")
-```
-
-```{r}
-fips_code <- fips_codes %>%
-  select(state, state_code, state_name)%>%
-  distinct()
-
-district_fips <- district_pcts %>%
-  left_join(fips_code, by = c("state" = "state_name"))%>%
-  rename(abbr_state = state.y)
-
-```
-
-
-This join reduced the number of rows with missing values from 10,574 to 1,404 which is the difference between the two data sets - district_data (13314), race_data (11910). We successfully joined all of the available race data with the district data. 
-```{r}
-
-dist_race_join <- district_fips %>%
-  left_join(race_data, by=c("school_ID" = "school_id", "state_code" = "state_fips"))%>%
-  select(-dist.y, -us_id)%>%
+dist_race_join <- hh %>%
+  left_join(race_data, by=c("leaid"))%>%
+  select(-dist.y)%>%
   rename(dist = dist.x) %>%
   relocate(where(is.numeric), .after = where(is.character))
 
@@ -212,9 +141,9 @@ Lets see which districts did not join and therefore are the missing school distr
 
 missing_race_dist <- dist_race_join %>% 
   filter_all(any_vars(is.na(.))) %>%
-  select(school_ID, state, dist, children)
+  select(leaid, state, dist, children)
 
-View(missing_race_dist)
+missing_race_dist %>% head(10)
 
 ```
 
@@ -228,5 +157,4 @@ missing_race_dist %>%
 ### Next steps
 
 - Figure out why there are 1,404 missing school districts in the race data and see if the missing data is accessible elsewhere
-
 
