@@ -45,8 +45,19 @@
         <a href="https://github.com/jonmgeiger/household-conditions/blob/main/data/hh.csv">(hh.csv)</a>
       </h3>
       <p>
-        <li>Provided by the
-          <a href="Provided by the Urban Institute">Urban Institute</a></li>
+        Originally provided by the
+        <a href="https://datacatalog.urban.org/dataset/household-conditions-geographic-school-district">Urban Institute</a>
+      </p>
+      <p>
+        Cleaned and pruned version of the original household conditions dataset. Changes include:
+        <li>Rename variables for easier use (see [
+          <a href="https://github.com/jonmgeiger/household-conditions/blob/main/scripts/names_list.R">names_list.R</a>
+          ])</li>
+        <li>Transform the original "Margin of Error" (MOE) variable into a single sided MOE for future anlayses</li>
+        <li>Include LEAID (state fips code + district ID) for easy joining</li>
+        <li>Filter out New York Department of Education "School District" -- This is an extreme outlier, as it includes the children for all 32 NY districts.
+          See
+          <a href="https://github.com/jonmgeiger/household-conditions/blob/main/scripts/create_hh.R">create_hh.R</a> for more details.</li>
       </p>
       <div class="table">
         <table>
@@ -153,7 +164,7 @@
         <li>Sourced form the Common Core of Data (CCD)</li>
         <li>See
           <a href="https://github.com/jonmgeiger/household-conditions/blob/main/scripts/download_finance_data.R">
-            download_finance_data_R for data retreival information</a></li><br>
+            download_finance_data_R</a> for data retreival information</li><br>
       <div class="table">
         <table>
           <tr>
