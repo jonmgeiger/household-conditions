@@ -12,6 +12,7 @@ library(openintro)
 library(leaps)
 library(ggthemes)
 theme_set(theme_clean())
+source("../scripts/prune_race_variables.R")
 ```
 
 # Purpose
@@ -21,8 +22,15 @@ The goal of this analysis is to fit a simple linear regression model to predict 
 # Data Import and Cleaning
 
 ```{r}
-data <- read_csv("../data/grad_raceP_household.csv") %>%
-    select(-student_total)
+grad <- read_csv("../data/grad.csv")
+hh   <- read_csv("../data/hh.csv") %>%
+    select(-ends_with("MOE"))
+race <- read_csv("../data/race.csv") %>%
+    prune_and_predom()
+data <- grad %>%
+    left_join(hh, by = c("leaid" = "leaid")) %>%
+    left_join(race, by = c("leaid" = "leaid")) %>%
+    select(-region, -predom_race)
 glimpse(data)
 ```
 
@@ -44,7 +52,8 @@ We will first construct a simple linear regression model using all household con
 
 ```{r}
 full_df <- data_standardized %>% 
-    select(pct_pov:pct_PI, grad_rate_midpt)
+    select(pct_pov:pct_PI, grad_rate_midpt) %>%
+    na.omit()
 
 hh_df <- full_df %>%
     select(pct_pov:pct_CLI, grad_rate_midpt)
