@@ -79,8 +79,3 @@ Based upon our observations throughout the quarter, we became interested graduat
 
 The first step of this question was which regression model would be most reflective of the data we had. Through the tidymodels package in r we were able to run 8 different models to assess which one would be the most accurate. Through these trial runs, we found that the gradient boosted tree and random forest models were the most accurate models for predicting graduation rates. 
 
-Next steps? what else to say? 
-
-## Conclusions: 
-
-
